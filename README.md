@@ -1,93 +1,244 @@
-# i18n
+# I18n Context Library
 
+一个轻量级的前端国际化 (i18n) 解决方案，为应用程序提供多语言支持。
 
+## 特性
 
-## Getting started
+- 单例模式设计，确保整个应用程序只有一个 I18n 实例
+- 支持多语言配置
+- 支持深层次的资源合并
+- 提供简便的文本获取方法
+- 支持嵌套键值访问
+- 支持参数插值
+- 类型安全 (使用 TypeScript 编写)
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## 安装
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
+```bash
+npm install @ticatec/i18n
+# 或者
+yarn add @ticatec/i18n
 ```
-cd existing_repo
-git remote add origin https://git.dev.ticatec.cn/ticatec/uniface/i18n.git
-git branch -M main
-git push -uf origin main
+
+## 快速开始
+
+### 初始化
+
+首先，需要初始化 I18nContext，并定义支持的语言列表：
+
+```typescript
+import I18nContext from '@ticatec/i18n';
+
+// 初始化 I18n 上下文，定义支持的语言
+const i18n = I18nContext.initialize(['en', 'zh', 'fr']);
+
+// 设置当前语言
+i18n.language = 'en';
 ```
 
-## Integrate with your tools
+### 添加语言资源
 
-- [ ] [Set up project integrations](http://cfdcc5aab9db/ticatec/uniface/i18n/-/settings/integrations)
+添加不同语言的翻译资源：
 
-## Collaborate with your team
+```typescript
+// 添加英文资源
+i18n.setResource({
+    greeting: 'Hello, {{name}}!',
+    buttons: {
+      submit: 'Submit',
+      cancel: 'Cancel'
+    },
+    messages: {
+      welcome: 'Welcome to {{appName}}',
+      goodbye: 'Goodbye, {{username}}! See you on {{date}}'
+    }
+});
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+// 添加中文资源
+i18n.setResource({
+    greeting: '你好，{{name}}！',
+    buttons: {
+      submit: '提交',
+      cancel: '取消'
+    },
+    messages: {
+      welcome: '欢迎使用 {{appName}}',
+      goodbye: '再见，{{username}}！下次见面是在 {{date}}'
+    }
+});
 
-## Test and Deploy
+// 可以分多次添加或更新资源
+i18n.setResource({
+    newSection: {
+      title: 'New Content'
+    }
+});
+```
 
-Use the built-in continuous integration in GitLab.
+### 获取翻译文本
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+```typescript
+// 获取简单文本
+const submitButton = i18n.getText('en.buttons.submit');  // 返回 'Submit'
 
-***
+// 使用参数插值
+const greeting = i18n.getText('en.greeting', { name: 'John' });  // 返回 'Hello, John!'
 
-# Editing this README
+// 多参数插值
+const goodbye = i18n.getText('en.messages.goodbye', { 
+  username: 'Alice', 
+  date: '2025-03-15' 
+});  // 返回 'Goodbye, Alice! See you on 2025-03-15'
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+// 使用默认值
+const missingText = i18n.getText('en.missing.key', '默认文本');  // 返回 '默认文本'
 
-## Suggestions for a good README
+// 带参数的默认值用法
+const missingWithParams = i18n.getText('en.missing.key', { name: 'John' }, '默认文本');  // 返回 '默认文本'
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+// 如果未找到键且未提供默认值，将返回 'Invalid key: en.missing.key'
+```
 
-## Name
-Choose a self-explaining name for your project.
+### 获取资源对象
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```typescript
+// 获取整个对象节点
+const buttons = i18n.get('buttons');  // 返回 { submit: 'Submit', cancel: 'Cancel' }
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### 切换语言
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+```typescript
+// 切换到中文
+i18n.language = 'zh';
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+// 尝试设置无效语言将抛出错误
+try {
+  i18n.language = 'de'; // 如果 'de' 不在初始化时定义的语言列表中，将抛出错误
+} catch (error) {
+  console.error(error);
+}
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## API 参考
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### I18nContext
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+#### 静态方法
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+- `initialize(languages: Array<string>): I18nContext`
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+  初始化 I18nContext 实例，并定义支持的语言列表。返回单例实例。
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+#### 实例属性
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+- `languages: Array<string>` (只读)
 
-## License
-For open source projects, say how it is licensed.
+  获取支持的语言列表。
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+- `language: string`
+
+  获取或设置当前语言。设置不支持的语言将抛出错误。
+
+#### 实例方法
+
+- `setResources(languagePackage: any): void`
+
+  添加或更新语言资源包。使用深度合并策略，保留现有资源并添加或更新新资源。
+
+- `getText(key: string, params?: Record<string, any> | string, defaultText?: string): string`
+
+  根据键获取翻译文本，支持参数插值。
+  - `key`: 点分隔的路径，指向资源对象中的特定文本（例如 'en.buttons.submit'）
+  - `params`: 可选参数，用于插值的对象。文本中的 {{paramName}} 将被替换为 params.paramName 的值
+  - `defaultText`: 可选参数，当键不存在时返回的默认文本
+  - 也支持 `getText(key, defaultText)` 的简化调用方式
+
+- `get(key: string): any`
+
+  根据键获取资源对象中的任意节点。
+  - `key`: 点分隔的路径，指向资源对象中的特定节点（例如 'en.buttons'）
+
+## 参数插值
+
+本库支持使用双大括号语法 `{{paramName}}` 进行参数插值：
+
+1. 在资源文件中定义带占位符的文本：
+   ```json
+   {
+     "greeting": "Hello, {{name}}!",
+     "items": "You have {{count}} items in your {{container}}"
+   }
+   ```
+
+2. 在代码中提供参数值：
+   ```typescript
+   i18n.getText('greeting', { name: 'John' });  // 'Hello, John!'
+   i18n.getText('items', { count: 5, container: 'cart' });  // 'You have 5 items in your cart'
+   ```
+
+## 资源合并规则
+
+本库使用智能深度合并策略:
+
+1. 对象会被递归合并
+2. 数组会被覆盖或扩展
+3. 简单类型值会被直接替换
+
+## 使用技巧
+
+### 组织资源文件
+
+推荐按语言和功能模块组织资源文件：
+
+```typescript
+// en.js
+export default {
+  common: {
+    yes: 'Yes',
+    no: 'No',
+    greeting: 'Hello, {{name}}!'
+  },
+  login: {
+    title: 'Login',
+    username: 'Username',
+    password: 'Password',
+    welcome: 'Welcome back, {{username}}!'
+  }
+}
+
+// 在应用中导入和使用
+import enResource from './locales/en';
+i18n.setResource(enResource);
+```
+
+### 结合组件框架使用
+
+在 React 中使用示例：
+
+```jsx
+function TranslatedWelcome({ username }) {
+  const i18n = I18nContext.initialize(['en', 'zh']);
+  return <h1>{i18n.getText('login.welcome', { username })}</h1>;
+}
+```
+
+在svelte中使用示例：
+```sveltehtml
+<div>
+  <TextEditor bind:value input$placeholder={i18n.getText('tutorial.text.enter_your_name', 'Enter your name')}/>
+</div>
+```
+
+
+## 版权信息
+
+Copyright © 2023 Ticatec。保留所有权利。
+
+本类库遵循 MIT 许可证发布。有关许可证的详细信息，请参阅 [LICENSE](LICENSE) 文件。
+
+## 联系方式
+
+huili.f@gmail.com
+
+https://github.com/ticatec/i18n

@@ -1,0 +1,44 @@
+{
+  "name": "@ticatec/i18n",
+  "version": "0.0.1",
+  "description": "This is a REST service class based on Axios, designed to simplify the handling of HTTP requests. It encapsulates common HTTP methods such as GET, POST, PUT, DELETE, upload, and download, while supporting request and response interceptors as well as error handling.",
+  "main": "./dist/index.js",
+  "scripts": {
+    "clean": "rm -rf ./dist",
+    "build": "tsc",
+    "publish:public": "npm publish --access public"
+  },
+  "keywords": [
+
+  ],
+  "repository": {
+    "type": "https",
+    "url": "https://github.com/henryfeng/axios-restful-service.git"
+  },
+  "bugs": {
+    "url": "https://github.com/henryfeng/axios-restful-service/issues"
+  },
+  "homepage": "https://github.com/henryfeng/axios-restful-service",
+  "author": "Henry Feng",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/**/*.spec.*"
+  ],
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./I18nContext": {
+      "types": "./dist/i18n/index.d.ts",
+      "import": "./dist/i18n/index.js"
+    }
+  },
+  "private": false,
+  "dependencies": {
+  }
+}
