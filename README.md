@@ -29,10 +29,10 @@ yarn add @ticatec/i18n
 First, initialize the I18nContext and define the list of supported languages:
 
 ```typescript
-import I18nContext from '@ticatec/i18n';
+import i18n from '@ticatec/i18n';
 
-// Initialize the I18n context and define supported languages.
-const i18n = I18nContext.initialize(['en', 'zh', 'fr']);
+// Initialize the set supported languages.
+i18n.setLanguage(['en', 'zh', 'fr']);
 
 // Set the current language.
 i18n.language = 'en';
@@ -43,7 +43,7 @@ i18n.language = 'en';
 Add translation resources for different languages:
 
 ```typescript
-// Add English resources.
+
 i18n.setResource({
     greeting: 'Hello, {{name}}!',
     buttons: {
@@ -56,7 +56,7 @@ i18n.setResource({
     }
 });
 
-// Add Chinese resources.
+// set new resource to override current one.
 i18n.setResource({
     greeting: '你好，{{name}}！',
     buttons: {
@@ -126,17 +126,11 @@ try {
 
 ### I18nContext
 
-#### Static Methods
-
-- `initialize(languages: Array<string>): I18nContext`
-
-  Initializes an I18nContext instance and defines the list of supported languages. Returns the singleton instance.
-
 #### Instance Properties
 
-- `languages: Array<string>` (Read-only)
+- `languages: Array<string>` 
 
-  Retrieves the list of supported languages.
+  Retrieves or sets the list of supported languages.
 
 - `language: string`
 
@@ -144,7 +138,7 @@ try {
 
 #### Instance Methods
 
-- `setResources(languagePackage: any): void`
+- `setResource(languagePackage: any): void`
 
   Adds or updates the language resource package. Uses a deep merge strategy to preserve existing resources and add or update new ones.
 
@@ -211,7 +205,7 @@ export default {
 
 // Import and use in the application.
 import enResource from './locales/en';
-i18n.setResource(enResource);
+i18n.setResources(enResource);
 ```
 
 ### Use with Component Frameworks

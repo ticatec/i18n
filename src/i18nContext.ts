@@ -1,24 +1,18 @@
 import utils from "./utils";
 
-export default class I18nContext {
+interface Params {
+    [key: string]: string | number;
+}
 
-    private static instance: I18nContext;
+class I18nContext {
 
     private resources: any;
-    private _language: string;
+    private _language: string = '';
 
-    readonly languages: Array<string>;
+    private _languages: Array<string> = [];
 
-    private constructor(languages: Array<string>) {
-        this.languages = languages;
+    constructor() {
         this.resources = {};
-    }
-
-    static initialize(languages: Array<string>): I18nContext {
-        if (I18nContext.instance == null) {
-            I18nContext.instance = new I18nContext(languages);
-        }
-        return I18nContext.instance;
     }
 
     private deepMerge(target: any, source: any): any {
@@ -71,8 +65,16 @@ export default class I18nContext {
         return source;
     }
 
+    set languages(value: Array<string>) {
+        this._languages = [...value];
+    }
+
+    get languages():Array<string> {
+        return [...this._languages];
+    }
+
     set language(value: string) {
-        if (this.languages.indexOf(value) < 0) {
+        if (this._languages.indexOf(value) < 0) {
             throw new Error('Invalid language: ' + value)
         }
         this._language = value;
@@ -93,7 +95,7 @@ export default class I18nContext {
      * @param defaultText 默认文本，当键不存在时返回
      * @returns 处理后的文本
      */
-    getText(key: string, params?: Record<string, any> | string, defaultText ?: string): string {
+    getText(key: string, params?: Params | string, defaultText ?: string): string {
         if (typeof params === 'string' && defaultText === undefined) {
             defaultText = params;
             params = undefined;
@@ -109,9 +111,9 @@ export default class I18nContext {
 
         // 如果有参数，进行插值替换
         if (params && typeof params === 'object') {
-            // 替换 {{paramName}} 格式的占位符
-            text = text.replace(/\{\{([^}]+)\}\}/g, (match, paramName) => {
-                const replacement = params[paramName.trim()];
+            // 类型断言，确保params是Params，需要确保逻辑正确。
+            text = text.replace(/\{\{([^}]+)\}\}/g, (match: any, paramName: any) => {
+                const replacement = (params as Params)[(paramName as string).trim()];
                 return replacement !== undefined ? String(replacement) : match;
             });
         }
@@ -127,5 +129,8 @@ export default class I18nContext {
         return utils.getNestedValue(this.resources, key);
     }
 
-
 }
+
+const i18n = new I18nContext();
+
+export default i18n;

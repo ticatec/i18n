@@ -1,3 +1,3 @@
-import i18nContext from "./i18nContext"
+import i18n from "./i18nContext"
 
-export default i18nContext;
+export default i18n;

@@ -30,7 +30,7 @@ yarn add @ticatec/i18n
 import I18nContext from '@ticatec/i18n';
 
 // 初始化 I18n 上下文，定义支持的语言
-const i18n = I18nContext.initialize(['en', 'zh', 'fr']);
+i18n.langugages(['en', 'zh', 'fr']);
 
 // 设置当前语言
 i18n.language = 'en';
@@ -54,7 +54,7 @@ i18n.setResource({
     }
 });
 
-// 添加中文资源
+// 添加中文资源并覆盖原有资源
 i18n.setResource({
     greeting: '你好，{{name}}！',
     buttons: {
@@ -124,17 +124,11 @@ try {
 
 ### I18nContext
 
-#### 静态方法
-
-- `initialize(languages: Array<string>): I18nContext`
-
-  初始化 I18nContext 实例，并定义支持的语言列表。返回单例实例。
-
 #### 实例属性
 
 - `languages: Array<string>` (只读)
 
-  获取支持的语言列表。
+  获取或设置支持的语言列表。
 
 - `language: string`
 
