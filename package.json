@@ -1,7 +1,7 @@
 {
   "name": "@ticatec/i18n",
   "version": "0.0.1",
-  "description": "This is a REST service class based on Axios, designed to simplify the handling of HTTP requests. It encapsulates common HTTP methods such as GET, POST, PUT, DELETE, upload, and download, while supporting request and response interceptors as well as error handling.",
+  "description": "A lightweight frontend internationalization (i18n) solution that provides multi-language support for applications.",
   "main": "./dist/index.js",
   "scripts": {
     "clean": "rm -rf ./dist",
@@ -9,16 +9,16 @@
     "publish:public": "npm publish --access public"
   },
   "keywords": [
-
+    "i18n", "languages", "internationalization", "svelte", "react"
   ],
   "repository": {
     "type": "https",
-    "url": "https://github.com/henryfeng/axios-restful-service.git"
+    "url": "https://github.com/ticatec/i18n.git"
   },
   "bugs": {
-    "url": "https://github.com/henryfeng/axios-restful-service/issues"
+    "url": "https://github.com/ticatec/i18n/issues"
   },
-  "homepage": "https://github.com/henryfeng/axios-restful-service",
+  "homepage": "https://github.com/ticatec/i18n",
   "author": "Henry Feng",
   "license": "MIT",
   "files": [

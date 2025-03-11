@@ -1,47 +1,49 @@
 # I18n Context Library
 
-一个轻量级的前端国际化 (i18n) 解决方案，为应用程序提供多语言支持。
+A lightweight frontend internationalization (i18n) solution that provides multi-language support for applications.
 
-## 特性
+[中文文档](./README_CN.md)
 
-- 单例模式设计，确保整个应用程序只有一个 I18n 实例
-- 支持多语言配置
-- 支持深层次的资源合并
-- 提供简便的文本获取方法
-- 支持嵌套键值访问
-- 支持参数插值
-- 类型安全 (使用 TypeScript 编写)
+## Features
 
-## 安装
+- Singleton pattern design, ensuring only one I18n instance throughout the application.
+- Supports multi-language configuration.
+- Supports deep resource merging.
+- Provides simple text retrieval methods.
+- Supports nested key-value access.
+- Supports parameter interpolation.
+- Type-safe (written in TypeScript).
+
+## Installation
 
 ```bash
 npm install @ticatec/i18n
-# 或者
+# or
 yarn add @ticatec/i18n
 ```
 
-## 快速开始
+## Quick Start
 
-### 初始化
+### Initialization
 
-首先，需要初始化 I18nContext，并定义支持的语言列表：
+First, initialize the I18nContext and define the list of supported languages:
 
 ```typescript
 import I18nContext from '@ticatec/i18n';
 
-// 初始化 I18n 上下文，定义支持的语言
+// Initialize the I18n context and define supported languages.
 const i18n = I18nContext.initialize(['en', 'zh', 'fr']);
 
-// 设置当前语言
+// Set the current language.
 i18n.language = 'en';
 ```
 
-### 添加语言资源
+### Add Language Resources
 
-添加不同语言的翻译资源：
+Add translation resources for different languages:
 
 ```typescript
-// 添加英文资源
+// Add English resources.
 i18n.setResource({
     greeting: 'Hello, {{name}}!',
     buttons: {
@@ -54,7 +56,7 @@ i18n.setResource({
     }
 });
 
-// 添加中文资源
+// Add Chinese resources.
 i18n.setResource({
     greeting: '你好，{{name}}！',
     buttons: {
@@ -67,7 +69,7 @@ i18n.setResource({
     }
 });
 
-// 可以分多次添加或更新资源
+// Resources can be added or updated multiple times.
 i18n.setResource({
     newSection: {
       title: 'New Content'
@@ -75,95 +77,95 @@ i18n.setResource({
 });
 ```
 
-### 获取翻译文本
+### Retrieve Translated Text
 
 ```typescript
-// 获取简单文本
-const submitButton = i18n.getText('en.buttons.submit');  // 返回 'Submit'
+// Retrieve simple text.
+const submitButton = i18n.getText('en.buttons.submit');  // Returns 'Submit'
 
-// 使用参数插值
-const greeting = i18n.getText('en.greeting', { name: 'John' });  // 返回 'Hello, John!'
+// Use parameter interpolation.
+const greeting = i18n.getText('en.greeting', { name: 'John' });  // Returns 'Hello, John!'
 
-// 多参数插值
+// Multi-parameter interpolation.
 const goodbye = i18n.getText('en.messages.goodbye', { 
   username: 'Alice', 
   date: '2025-03-15' 
-});  // 返回 'Goodbye, Alice! See you on 2025-03-15'
+});  // Returns 'Goodbye, Alice! See you on 2025-03-15'
 
-// 使用默认值
-const missingText = i18n.getText('en.missing.key', '默认文本');  // 返回 '默认文本'
+// Use default values.
+const missingText = i18n.getText('en.missing.key', 'Default text');  // Returns 'Default text'
 
-// 带参数的默认值用法
-const missingWithParams = i18n.getText('en.missing.key', { name: 'John' }, '默认文本');  // 返回 '默认文本'
+// Default value usage with parameters.
+const missingWithParams = i18n.getText('en.missing.key', { name: 'John' }, 'Default text');  // Returns 'Default text'
 
-// 如果未找到键且未提供默认值，将返回 'Invalid key: en.missing.key'
+// If the key is not found and no default value is provided, 'Invalid key: en.missing.key' will be returned.
 ```
 
-### 获取资源对象
+### Retrieve Resource Objects
 
 ```typescript
-// 获取整个对象节点
-const buttons = i18n.get('buttons');  // 返回 { submit: 'Submit', cancel: 'Cancel' }
+// Retrieve the entire object node.
+const buttons = i18n.get('buttons');  // Returns { submit: 'Submit', cancel: 'Cancel' }
 ```
 
-### 切换语言
+### Switch Languages
 
 ```typescript
-// 切换到中文
+// Switch to Chinese.
 i18n.language = 'zh';
 
-// 尝试设置无效语言将抛出错误
+// Attempting to set an invalid language will throw an error.
 try {
-  i18n.language = 'de'; // 如果 'de' 不在初始化时定义的语言列表中，将抛出错误
+  i18n.language = 'de'; // Will throw an error if 'de' is not in the list of languages defined during initialization.
 } catch (error) {
   console.error(error);
 }
 ```
 
-## API 参考
+## API Reference
 
 ### I18nContext
 
-#### 静态方法
+#### Static Methods
 
 - `initialize(languages: Array<string>): I18nContext`
 
-  初始化 I18nContext 实例，并定义支持的语言列表。返回单例实例。
+  Initializes an I18nContext instance and defines the list of supported languages. Returns the singleton instance.
 
-#### 实例属性
+#### Instance Properties
 
-- `languages: Array<string>` (只读)
+- `languages: Array<string>` (Read-only)
 
-  获取支持的语言列表。
+  Retrieves the list of supported languages.
 
 - `language: string`
 
-  获取或设置当前语言。设置不支持的语言将抛出错误。
+  Retrieves or sets the current language. Setting an unsupported language will throw an error.
 
-#### 实例方法
+#### Instance Methods
 
 - `setResources(languagePackage: any): void`
 
-  添加或更新语言资源包。使用深度合并策略，保留现有资源并添加或更新新资源。
+  Adds or updates the language resource package. Uses a deep merge strategy to preserve existing resources and add or update new ones.
 
 - `getText(key: string, params?: Record<string, any> | string, defaultText?: string): string`
 
-  根据键获取翻译文本，支持参数插值。
-  - `key`: 点分隔的路径，指向资源对象中的特定文本（例如 'en.buttons.submit'）
-  - `params`: 可选参数，用于插值的对象。文本中的 {{paramName}} 将被替换为 params.paramName 的值
-  - `defaultText`: 可选参数，当键不存在时返回的默认文本
-  - 也支持 `getText(key, defaultText)` 的简化调用方式
+  Retrieves the translated text based on the key, supporting parameter interpolation.
+  - `key`: Dot-separated path to a specific text in the resource object (e.g., 'en.buttons.submit').
+  - `params`: Optional parameters, an object used for interpolation. {{paramName}} in the text will be replaced with the value of params.paramName.
+  - `defaultText`: Optional parameter, the default text to return when the key does not exist.
+  - Also supports the simplified call `getText(key, defaultText)`.
 
 - `get(key: string): any`
 
-  根据键获取资源对象中的任意节点。
-  - `key`: 点分隔的路径，指向资源对象中的特定节点（例如 'en.buttons'）
+  Retrieves any node in the resource object based on the key.
+  - `key`: Dot-separated path to a specific node in the resource object (e.g., 'en.buttons').
 
-## 参数插值
+## Parameter Interpolation
 
-本库支持使用双大括号语法 `{{paramName}}` 进行参数插值：
+This library supports parameter interpolation using the double curly braces syntax `{{paramName}}`:
 
-1. 在资源文件中定义带占位符的文本：
+1. Define text with placeholders in the resource file:
    ```json
    {
      "greeting": "Hello, {{name}}!",
@@ -171,25 +173,25 @@ try {
    }
    ```
 
-2. 在代码中提供参数值：
+2. Provide parameter values in the code:
    ```typescript
    i18n.getText('greeting', { name: 'John' });  // 'Hello, John!'
    i18n.getText('items', { count: 5, container: 'cart' });  // 'You have 5 items in your cart'
    ```
 
-## 资源合并规则
+## Resource Merge Rules
 
-本库使用智能深度合并策略:
+This library uses a smart deep merge strategy:
 
-1. 对象会被递归合并
-2. 数组会被覆盖或扩展
-3. 简单类型值会被直接替换
+1. Objects are merged recursively.
+2. Arrays are overwritten or extended.
+3. Simple type values are directly replaced.
 
-## 使用技巧
+## Usage Tips
 
-### 组织资源文件
+### Organize Resource Files
 
-推荐按语言和功能模块组织资源文件：
+It is recommended to organize resource files by language and functional module:
 
 ```typescript
 // en.js
@@ -207,14 +209,14 @@ export default {
   }
 }
 
-// 在应用中导入和使用
+// Import and use in the application.
 import enResource from './locales/en';
 i18n.setResource(enResource);
 ```
 
-### 结合组件框架使用
+### Use with Component Frameworks
 
-在 React 中使用示例：
+Example of using in React:
 
 ```jsx
 function TranslatedWelcome({ username }) {
@@ -222,23 +224,21 @@ function TranslatedWelcome({ username }) {
   return <h1>{i18n.getText('login.welcome', { username })}</h1>;
 }
 ```
-
-在svelte中使用示例：
+Example of using in svelte:
 ```sveltehtml
 <div>
   <TextEditor bind:value input$placeholder={i18n.getText('tutorial.text.enter_your_name', 'Enter your name')}/>
 </div>
 ```
 
+## Copyright Information
 
-## 版权信息
+Copyright © 2023 Ticatec. All rights reserved.
 
-Copyright © 2023 Ticatec。保留所有权利。
+This library is released under the MIT License. See the [LICENSE](LICENSE) file for license details.
 
-本类库遵循 MIT 许可证发布。有关许可证的详细信息，请参阅 [LICENSE](LICENSE) 文件。
-
-## 联系方式
+## Contact
 
 huili.f@gmail.com
 
-https://github.com/ticatec/i18n
+[https://github.com/ticatec/i18n](https://github.com/ticatec/i18n)
