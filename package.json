@@ -1,6 +1,6 @@
 {
   "name": "@ticatec/i18n",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A lightweight frontend internationalization (i18n) solution that provides multi-language support for applications.",
   "main": "./dist/index.js",
   "scripts": {
@@ -32,6 +32,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./i18nUtils": {
+      "types": "./dist/i18nUtils.d.ts",
+      "import": "./dist/i18nUtils.js"
     }
   },
   "private": false,
