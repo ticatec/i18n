@@ -53,6 +53,15 @@ const loadResources = async (res: string | Array<string>): Promise<void> => {
     }
 }
 
+/**
+ * 通过key/value的键值方式获取当前语言的文字
+ * @param token
+ * @param params
+ */
+export const getI18nText = (token: Record<string, string>, params: any = null): string => {
+    return i18n.getText(token.key, params, token.text);
+}
+
 export default {
     initialize,
     loadResources
