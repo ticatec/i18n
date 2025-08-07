@@ -1,5 +1,7 @@
 # I18n 国际化库
 
+[![npm version](https://badge.fury.io/js/%40ticatec%2Fi18n.svg)](https://badge.fury.io/js/%40ticatec%2Fi18n)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 一个轻量级的 TypeScript 国际化（i18n）库，专为客户端应用程序设计，具有基于 Proxy 的资源访问、智能深度合并功能和灵活的覆盖控制。完美支持 React、Svelte 和其他现代前端框架。
 

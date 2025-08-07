@@ -1,5 +1,8 @@
 # I18n Library
 
+[![npm version](https://badge.fury.io/js/%40ticatec%2Fi18n.svg)](https://badge.fury.io/js/%40ticatec%2Fi18n)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A lightweight TypeScript internationalization (i18n) library for client-side applications featuring Proxy-based resource access, intelligent deep merge capabilities, and flexible override controls. Perfect for React, Svelte, and other modern frontend frameworks.
 
 [中文](./README_CN.md) | English
