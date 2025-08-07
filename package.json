@@ -1,6 +1,6 @@
 {
   "name": "@ticatec/i18n",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A lightweight frontend internationalization (i18n) solution with Proxy-based resource access, deep merge capabilities, and flexible override controls for React, Svelte and other modern frameworks.",
   "main": "./dist/index.js",
   "scripts": {
