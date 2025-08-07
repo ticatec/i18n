@@ -1,21 +1,15 @@
 import utils from "./utils";
 
-interface Params {
-    [key: string]: string | number;
-}
-
 class I18nContext {
 
     private resources: any;
     private _language: string = '';
 
-    private _languages: Array<string> = [];
-
     constructor() {
         this.resources = {};
     }
 
-    private deepMerge(target: any, source: any): any {
+    private deepMerge(target: any, source: any, override: boolean = true): any {
         if (source === null || source === undefined) {
             return target;
         }
@@ -28,10 +22,13 @@ class I18nContext {
             for (let i = 0; i < source.length; i++) {
                 if (i < result.length) {
                     if (typeof result[i] === 'object' && typeof source[i] === 'object' &&
-                        !Array.isArray(result[i]) !== Array.isArray(source[i])) {
-                        result[i] = this.deepMerge(result[i], source[i]);
+                        Array.isArray(result[i]) === Array.isArray(source[i])) {
+                        result[i] = this.deepMerge(result[i], source[i], override);
                     } else {
-                        result[i] = source[i];
+                        // 对于数组元素，如果不覆盖且目标已存在，保持原值
+                        if (override || result[i] === undefined) {
+                            result[i] = source[i];
+                        }
                     }
                 } else {
                     result.push(source[i]);
@@ -51,10 +48,15 @@ class I18nContext {
                         typeof source[key] === 'object' &&
                         target[key] !== null &&
                         source[key] !== null &&
-                        !Array.isArray(target[key]) !== Array.isArray(source[key])) {
-                        result[key] = this.deepMerge(target[key], source[key]);
+                        Array.isArray(target[key]) === Array.isArray(source[key])) {
+                        // 递归合并对象，传递 override 参数
+                        result[key] = this.deepMerge(target[key], source[key], override);
                     } else {
-                        result[key] = source[key];
+                        // 关键逻辑：根据 override 参数决定是否覆盖
+                        if (override || !(key in target)) {
+                            result[key] = source[key];
+                        }
+                        // 如果 override=false 且 key 已存在，保持原值（不做任何操作）
                     }
                 }
             }
@@ -62,21 +64,22 @@ class I18nContext {
             return result;
         }
 
-        return source;
+        // 对于基本类型值，根据 override 参数决定
+        return override ? source : target;
     }
 
-    set languages(value: Array<string>) {
-        this._languages = [...value];
+// 对应的 setResource 方法也需要支持 override 参数
+    /**
+     *
+     * @param langRes
+     * @param override
+     */
+    setResource(langRes: any, override: boolean = true) {
+        this.resources = this.deepMerge(this.resources, langRes, override);
     }
 
-    get languages():Array<string> {
-        return [...this._languages];
-    }
 
     set language(value: string) {
-        if (this._languages.indexOf(value) < 0) {
-            throw new Error('Invalid language: ' + value)
-        }
         this._language = value;
     }
 
@@ -84,22 +87,13 @@ class I18nContext {
         return this._language;
     }
 
-    setResource(languagePackage: any) {
-        this.resources = this.deepMerge(this.resources, languagePackage);
-    }
-
     /**
      * 根据key值获取相应的文本值，并支持参数插值
      * @param key 文本的键名
-     * @param params 插值参数对象，可选
      * @param defaultText 默认文本，当键不存在时返回
      * @returns 处理后的文本
      */
-    getText(key: string, params?: Params | string, defaultText ?: string): string {
-        if (typeof params === 'string' && defaultText === undefined) {
-            defaultText = params;
-            params = undefined;
-        }
+    getText(key: string, defaultText ?: string): string {
 
         // 获取原始文本
         let text = utils.getNestedValue(this.resources, key);
@@ -108,16 +102,6 @@ class I18nContext {
         if (text === undefined || typeof text !== 'string') {
             text = defaultText || `Invalid key: ${key}`;
         }
-
-        // 如果有参数，进行插值替换
-        if (params && typeof params === 'object') {
-            // 类型断言，确保params是Params，需要确保逻辑正确。
-            text = text.replace(/\{\{([^}]+)\}\}/g, (match: any, paramName: any) => {
-                const replacement = (params as Params)[(paramName as string).trim()];
-                return replacement !== undefined ? String(replacement) : match;
-            });
-        }
-
         return text;
     }
 

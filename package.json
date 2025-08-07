@@ -1,28 +1,43 @@
 {
   "name": "@ticatec/i18n",
-  "version": "0.0.8",
-  "description": "A lightweight frontend internationalization (i18n) solution that provides multi-language support for applications.",
+  "version": "0.2.0",
+  "description": "A lightweight frontend internationalization (i18n) solution with Proxy-based resource access, deep merge capabilities, and flexible override controls for React, Svelte and other modern frameworks.",
   "main": "./dist/index.js",
   "scripts": {
     "clean": "rm -rf ./dist",
     "build": "tsc",
-    "publish:public": "npm publish --access public"
+    "publish:public": "npm publish --access public",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "i18n", "languages", "internationalization", "svelte", "react"
+    "i18n",
+    "internationalization",
+    "languages",
+    "multilingual",
+    "typescript",
+    "proxy",
+    "resource-management",
+    "deep-merge",
+    "svelte",
+    "react",
+    "frontend",
+    "localization",
+    "translation"
   ],
   "repository": {
-    "type": "https",
+    "type": "git",
     "url": "https://github.com/ticatec/i18n.git"
   },
   "bugs": {
     "url": "https://github.com/ticatec/i18n/issues"
   },
   "homepage": "https://github.com/ticatec/i18n",
-  "author": "Henry Feng",
+  "author": "Henry Feng <huili.f@gmail.com>",
   "license": "MIT",
   "files": [
     "dist",
+    "README.md",
+    "README_CN.md",
     "!dist/**/*.test.*",
     "!dist/**/*.spec.*"
   ],
@@ -38,7 +53,17 @@
       "import": "./dist/i18nUtils.js"
     }
   },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
   "private": false,
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0"
   }
 }

@@ -1,7 +1,7 @@
 /**
  * 获取嵌套属性节点，如果中间为null，补空对象
  * @param obj
- * @param path
+ * @param keys
  */
 const getNestedObject = (obj: any, keys: string[]) => {
     let current = obj;
