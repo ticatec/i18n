@@ -6,6 +6,7 @@
   "scripts": {
     "clean": "rm -rf ./dist",
     "build": "tsc",
+    "prepare": "npm run clean && npm run build",
     "publish:public": "npm publish --access public",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
