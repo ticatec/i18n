@@ -51,41 +51,45 @@ const loadResources = async (res: string | Array<string>): Promise<void> => {
  * @param basePath
  */
 function createResourceProxy(defaultResource: any, namespace: string, basePath?: string) {
-    // 将默认资源注入到 i18n 中
     i18n.setResource({[namespace]: defaultResource}, false);
 
-    const createProxy = (path?: string):any => {
+    const createProxy = (path?: string, isMissingKey = false): any => {
         return new Proxy({}, {
             get(target, prop) {
+                // 特殊方法处理
+                if (prop === 'toString') {
+                    const fullKey = `${namespace}.${path || ''}`;
+                    return () => isMissingKey ? `missing key: [${fullKey}]` : `[${fullKey}]`;
+                }
+
+                if (prop === Symbol.toPrimitive || prop === 'valueOf') {
+                    const fullKey = `${namespace}.${path || ''}`;
+                    return () => isMissingKey ? `missing key: [${fullKey}]` : `[${fullKey}]`;
+                }
+
                 const propStr = String(prop);
                 const currentPath = path ? `${path}.${propStr}` : propStr;
-
-                // 构建完整的 key 路径
                 const fullKey = `${namespace}.${currentPath}`;
-
-                // 从 i18n 中获取值（包含默认值和覆盖的值）
                 const value = i18n.get(fullKey);
 
                 if (value !== undefined) {
-                    // 如果值是对象，为其创建深层 Proxy
                     if (typeof value === 'object' && !Array.isArray(value)) {
-                        return createProxy(currentPath);
+                        return createProxy(currentPath, false);
                     }
                     return value;
                 }
 
-                // 如果没有找到值，返回明确的错误信息
-                return `missing key: [${fullKey}]`;
+                // 返回一个标记为 missing 的 Proxy
+                return createProxy(currentPath, true);
             }
         });
     };
 
-    return createProxy(basePath);
-
+    return createProxy(basePath, false);
 }
 
 const formatText = (template: string, params: any): string => {
-    return template.replace(/{{\s*([^}]+)\s*}}/g, (_, path) => {
+    return template ? template.toString().replace(/{{\s*([^}]+)\s*}}/g, (_, path) => {
         const keys = path.split('.');
         let value = params??{};
         for (const key of keys) {
@@ -96,7 +100,7 @@ const formatText = (template: string, params: any): string => {
             }
         }
         return String(value);
-    });
+    }) : '';
 }
 
 /**
