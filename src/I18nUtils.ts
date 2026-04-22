@@ -50,42 +50,72 @@ const loadResources = async (res: string | Array<string>): Promise<void> => {
  * @param namespace
  * @param basePath
  */
+/**
+ * 创建深层 Proxy
+ * @param defaultResource 默认资源（用于初始化）
+ * @param namespace 命名空间
+ * @param basePath 基础路径（可选）
+ */
 function createResourceProxy(defaultResource: any, namespace: string, basePath?: string) {
-    i18n.setResource({[namespace]: defaultResource}, false);
-
-    const createProxy = (path?: string, isMissingKey = false): any => {
+    i18n.setResource({ [namespace]: defaultResource }, false);
+    const missingKeys = new Set<string>();
+    const createProxy = (path = '', isMissing = false): any => {
         return new Proxy({}, {
-            get(target, prop) {
-                // 特殊方法处理
-                if (prop === 'toString') {
-                    const fullKey = `${namespace}.${path || ''}`;
-                    return () => isMissingKey ? `missing key: [${fullKey}]` : `[${fullKey}]`;
+            get(target, prop, receiver) {
+                // ==================== 特殊属性/符号处理 ====================
+                if (prop === 'toString' || prop === Symbol.toPrimitive || prop === 'valueOf') {
+                    const fullKey = `${namespace}.${path || ''}`.replace(/\.$/, '');
+                    return () => isMissing
+                        ? `missing key: [${fullKey}]`
+                        : `[${fullKey}]`;
                 }
 
-                if (prop === Symbol.toPrimitive || prop === 'valueOf') {
-                    const fullKey = `${namespace}.${path || ''}`;
-                    return () => isMissingKey ? `missing key: [${fullKey}]` : `[${fullKey}]`;
+                // 常见框架/调试用的符号和属性（防止异常）
+                if (
+                    prop === Symbol.iterator ||
+                    prop === Symbol.toStringTag ||
+                    prop === Symbol.hasInstance ||
+                    prop === '$$typeof' ||           // React
+                    prop === '_isVue' ||             // Vue 2
+                    prop === '__v_isRef' ||          // Vue 3
+                    prop === 'constructor' ||
+                    typeof prop === 'symbol'         // 其他未知 symbol 都安全返回 undefined 或标记
+                ) {
+                    return isMissing ? undefined : undefined; // 或返回一个 noop 函数
                 }
 
+                // ==================== 正常路径处理 ====================
                 const propStr = String(prop);
                 const currentPath = path ? `${path}.${propStr}` : propStr;
                 const fullKey = `${namespace}.${currentPath}`;
+
                 const value = i18n.get(fullKey);
 
                 if (value !== undefined) {
-                    if (typeof value === 'object' && !Array.isArray(value)) {
+                    // 如果是对象（非数组），继续返回深层 Proxy
+                    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
                         return createProxy(currentPath, false);
                     }
+                    // 叶子节点（字符串、数字等）直接返回
                     return value;
+                } else {
+                    // @ts-ignore
+                    if (import.meta?.env?.DEV && !missingKeys.has(fullKey)) {
+                        missingKeys.add(fullKey);
+                        console.warn(`Missing i18n key: ${fullKey}`);
+                    }
+                    return createProxy(currentPath, true);
                 }
+            },
 
-                // 返回一个标记为 missing 的 Proxy
-                return createProxy(currentPath, true);
+            // 可选：增加 has trap，防止 'prop' in proxy 行为异常
+            has(target, prop) {
+                return true; // 让所有属性看起来都“存在”，避免一些框架的检查报错
             }
         });
     };
 
-    return createProxy(basePath, false);
+    return createProxy(basePath || '', false);
 }
 
 const formatText = (template: string, params: any): string => {
