@@ -1,26 +1,51 @@
 import i18n from "./i18nContext";
+import type { I18nResource, I18nToken, TemplateParams, I18nProxy } from "./types";
 
 /**
- *
- * @param key
+ * Initializes the i18n library by reading language settings from localStorage.
+ * @param key - The key name in localStorage where language is stored. Defaults to 'language'.
+ * @example
+ * ```typescript
+ * initialize(); // Uses 'language' key
+ * initialize('user_language'); // Uses custom key
+ * ```
  */
-const initialize = (key: string = 'language') => {
-    i18n.language = window.localStorage.getItem(key) as string;
+const initialize = (key: string = 'language'): void => {
+    const lang = window.localStorage.getItem(key);
+    if (lang) {
+        i18n.language = lang;
+    }
 }
 
+/**
+ * Appends a language suffix to a filename.
+ * @param filename - The original filename.
+ * @param suffix - The language suffix to append.
+ * @returns The filename with suffix inserted before the extension.
+ * @example
+ * ```typescript
+ * appendSuffix('messages.json', 'en'); // Returns: 'messages_en.json'
+ * appendSuffix('config', 'zh'); // Returns: 'config_zh'
+ * ```
+ */
 const appendSuffix = (filename: string, suffix: string): string => {
     const lastDotIndex = filename.lastIndexOf(".");
-
-    // 如果没有扩展名，直接添加后缀
-    if (lastDotIndex === -1) {
-        return filename + suffix;
-    }
-
-    // 在扩展名之前插入后缀
-    return filename.slice(0, lastDotIndex) + '_' + suffix + filename.slice(lastDotIndex);
+    return lastDotIndex === -1
+        ? filename + suffix
+        : filename.slice(0, lastDotIndex) + '_' + suffix + filename.slice(lastDotIndex);
 }
 
-const loadJsonFile = async (url: string): Promise<any> => {
+/**
+ * Loads a JSON file from the specified URL.
+ * @param url - The URL of the JSON file.
+ * @returns Parsed JSON object, or null if loading fails.
+ * @example
+ * ```typescript
+ * const data = await loadJsonFile('/locales/messages_en.json');
+ * if (data) { console.log(data); }
+ * ```
+ */
+const loadJsonFile = async (url: string): Promise<I18nResource | null> => {
     try {
         const response = await fetch(url);
         if (!response.ok) {
@@ -29,15 +54,30 @@ const loadJsonFile = async (url: string): Promise<any> => {
         return await response.json();
     } catch (error) {
         console.error("Failed to fetch JSON:", error);
-        return null; // 或者返回一个默认对象，比如 `{}`，根据需求调整
+        return null;
     }
 }
 
-const loadResources = async (res: string | Array<string>): Promise<void> => {
-    let resList = Array.isArray(res) ? res : [res];
-    for (let item of resList) {
+/**
+ * Loads translation resources from JSON files.
+ * Automatically appends the current language as a suffix to each filename.
+ * @param res - Single resource URL or array of resource URLs.
+ * @example
+ * ```typescript
+ * // Load single resource
+ * await loadResources('./locales/messages.json');
+ * // Load multiple resources
+ * await loadResources(['./locales/common.json', './locales/errors.json']);
+ * ```
+ */
+const loadResources = async (res: string | string[]): Promise<void> => {
+    const resList = Array.isArray(res) ? res : [res];
+    for (const item of resList) {
         try {
-            i18n.setResource(await loadJsonFile(appendSuffix(item, i18n.language)))
+            const json = await loadJsonFile(appendSuffix(item, i18n.language));
+            if (json) {
+                i18n.setResource(json);
+            }
         } catch (error) {
             console.error(`cannot load resource: ${item}`);
         }
@@ -45,106 +85,165 @@ const loadResources = async (res: string | Array<string>): Promise<void> => {
 }
 
 /**
- * 创建深层 Proxy
- * @param defaultResource
- * @param namespace
- * @param basePath
+ * Formats a template string by replacing placeholders with parameter values.
+ * Supports nested parameter access using dot notation (e.g., `{{user.name}}`).
+ *
+ * @param template - The template string with `{{placeholder}}` syntax.
+ * @param params - Object containing parameter values.
+ * @returns Formatted string with placeholders replaced.
+ * @example
+ * ```typescript
+ * formatText('Hello {{name}}', { name: 'John' }); // "Hello John"
+ * formatText('Hello {{user.name}}', { user: { name: 'Jane' } }); // "Hello Jane"
+ * ```
  */
+const formatText = (template: string, params?: TemplateParams): string => {
+    if (!template) return '';
+
+    return template.replace(/{{\s*([^}]+)\s*}}/g, (_, path) => {
+        const keys = path.split('.');
+        let value: unknown = params;
+        for (const key of keys) {
+            if (value && typeof value === 'object' && key in value) {
+                value = (value as Record<string, unknown>)[key];
+            } else {
+                return 'Missing';
+            }
+        }
+        return value != null ? String(value) : 'Missing';
+    });
+}
+
 /**
- * 创建深层 Proxy
- * @param defaultResource 默认资源（用于初始化）
- * @param namespace 命名空间
- * @param basePath 基础路径（可选）
+ * Gets formatted translation text using a key/value token approach.
+ * Useful for maintaining default values alongside translation keys.
+ * @param token - Translation token containing `key` and optional default `text`.
+ * @param params - Optional parameters for text interpolation.
+ * @returns Formatted translation text.
+ * @example
+ * ```typescript
+ * const token = { key: 'welcome.message', text: 'Welcome {{name}}!' };
+ * getI18nText(token, { name: 'John' }); // Returns translated or default text
+ * ```
  */
-function createResourceProxy(defaultResource: any, namespace: string, basePath?: string) {
+export const getI18nText = <T extends I18nResource = I18nResource>(
+    token: I18nToken<T>,
+    params?: TemplateParams
+): string => {
+    return formatText(i18n.getText(token.key, token.text), params);
+};
+
+/**
+ * Creates a Proxy-based translation resource accessor with support for chaining and function calls.
+ * Provides automatic fallback to default resources when translations are missing.
+ * @param defaultResource - Default translation object used as fallback.
+ * @param namespace - Namespace prefix for resource isolation.
+ * @param basePath - Optional base path for nested access within the namespace.
+ * @returns A Proxy object that supports property chaining and function calls with parameters.
+ * @example
+ * ```typescript
+ * const texts = createResourceProxy(
+ *   { buttons: { save: 'Save' } },
+ *   'myApp'
+ * );
+ * texts.buttons.save(); // "Save"
+ * texts.buttons.save({ name: 'John' }); // With parameter interpolation
+ * texts.missing.key; // "missing key: [myApp.missing.key]"
+ * ```
+ */
+function createResourceProxy<T extends I18nResource = I18nResource>(
+    defaultResource: Partial<T>,
+    namespace: string,
+    basePath?: string
+): I18nProxy {
     i18n.setResource({ [namespace]: defaultResource }, false);
     const missingKeys = new Set<string>();
-    const createProxy = (path = '', isMissing = false): any => {
-        return new Proxy({}, {
-            get(target, prop, receiver) {
-                // ==================== 特殊属性/符号处理 ====================
+
+    const createProxy = (path = '', isMissing = false): I18nProxy => {
+        const targetTarget = () => {};
+
+        return new Proxy(targetTarget, {
+            get(target, prop: string | symbol, receiver) {
+                const fullKey = `${namespace}.${path || ''}`.replace(/\.$/, '');
+
+                // Handle string conversion for terminal/leaf nodes
                 if (prop === 'toString' || prop === Symbol.toPrimitive || prop === 'valueOf') {
-                    const fullKey = `${namespace}.${path || ''}`.replace(/\.$/, '');
-                    return () => isMissing
-                        ? `missing key: [${fullKey}]`
-                        : `[${fullKey}]`;
+                    return () => {
+                        if (isMissing) return `missing key: [${fullKey}]`;
+                        const template = i18n.get(fullKey);
+                        return (template != null && typeof template !== 'object') ? String(template) : `[${fullKey}]`;
+                    };
                 }
 
-                // 常见框架/调试用的符号和属性（防止异常）
+                // Pass through framework symbols and special properties
                 if (
-                    prop === Symbol.iterator ||
-                    prop === Symbol.toStringTag ||
-                    prop === Symbol.hasInstance ||
-                    prop === '$$typeof' ||           // React
-                    prop === '_isVue' ||             // Vue 2
-                    prop === '__v_isRef' ||          // Vue 3
+                    typeof prop === 'symbol' ||
+                    prop.startsWith('__') ||
                     prop === 'constructor' ||
-                    typeof prop === 'symbol'         // 其他未知 symbol 都安全返回 undefined 或标记
+                    prop === '$$typeof'
                 ) {
-                    return isMissing ? undefined : undefined; // 或返回一个 noop 函数
+                    return undefined;
                 }
 
-                // ==================== 正常路径处理 ====================
+                // Normal path traversal
                 const propStr = String(prop);
                 const currentPath = path ? `${path}.${propStr}` : propStr;
-                const fullKey = `${namespace}.${currentPath}`;
+                const nextFullKey = `${namespace}.${currentPath}`;
 
-                const value = i18n.get(fullKey);
+                const value = i18n.get(nextFullKey);
 
-                if (value !== undefined) {
-                    // 如果是对象（非数组），继续返回深层 Proxy
-                    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                if (value !== undefined && value !== null) {
+                    // If pure object (non-array), continue recursion for intermediate namespace nodes
+                    if (typeof value === 'object' && !Array.isArray(value)) {
                         return createProxy(currentPath, false);
                     }
-                    // 叶子节点（字符串、数字等）直接返回
-                    return value;
+                    return createProxy(currentPath, false);
                 } else {
-                    // @ts-ignore
-                    if (import.meta?.env?.DEV && !missingKeys.has(fullKey)) {
-                        missingKeys.add(fullKey);
-                        console.warn(`Missing i18n key: ${fullKey}`);
+                    // Enable missing key warnings in DEV mode
+                    // @ts-ignore - DEV environment variable
+                    if (import.meta?.env?.DEV && !missingKeys.has(nextFullKey)) {
+                        missingKeys.add(nextFullKey);
+                        console.warn(`[i18n] Missing key: ${nextFullKey}`);
                     }
                     return createProxy(currentPath, true);
                 }
             },
 
-            // 可选：增加 has trap，防止 'prop' in proxy 行为异常
-            has(target, prop) {
-                return true; // 让所有属性看起来都“存在”，避免一些框架的检查报错
+            // Handle function call mode (for parameter passing)
+            apply(target, thisArg, argumentsList) {
+                const fullKey = `${namespace}.${path || ''}`.replace(/\.$/, '');
+
+                if (isMissing) {
+                    return `missing key: [${fullKey}]`;
+                }
+
+                const template = i18n.get(fullKey);
+                if (template == null || typeof template === 'object') {
+                    return `[${fullKey}]`;
+                }
+
+                const params = argumentsList[0];
+                return formatText(String(template), params);
+            },
+
+            // Maintain robust has interception
+            has(target, prop: string | symbol) {
+                if (typeof prop === 'symbol') return false;
+                const nextFullKey = path ? `${namespace}.${path}.${String(prop)}` : `${namespace}.${String(prop)}`;
+                return i18n.get(nextFullKey) !== undefined;
             }
-        });
+        }) as unknown as I18nProxy;
     };
 
     return createProxy(basePath || '', false);
 }
 
-const formatText = (template: string, params: any): string => {
-    return template ? template.toString().replace(/{{\s*([^}]+)\s*}}/g, (_, path) => {
-        const keys = path.split('.');
-        let value = params??{};
-        for (const key of keys) {
-            if (value && typeof value === 'object' && key in value) {
-                value = value[key];
-            } else {
-                return 'Missing'; // 找不到对应值就返回空字符串
-            }
-        }
-        return String(value);
-    }) : '';
-}
-
 /**
- * 通过key/value的键值方式获取当前语言的文字
- * @param token
- * @param params
+ * I18n utility functions for initialization, resource loading, and text formatting.
  */
-export const getI18nText = (token: Record<string, string>, params: any = null): string => {
-    return formatText(i18n.getText(token.key, token.text), params);
-}
-
 export default {
     initialize,
     loadResources,
     createResourceProxy,
     formatText
-}
+};

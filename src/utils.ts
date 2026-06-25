@@ -1,34 +1,54 @@
 /**
- * 获取嵌套属性节点，如果中间为null，补空对象
- * @param obj
- * @param keys
+ * Utility functions for nested object access and value retrieval.
+ * @module utils
  */
-const getNestedObject = (obj: any, keys: string[]) => {
-    let current = obj;
+
+/**
+ * Gets a nested object property by path array.
+ * Returns an empty object if any intermediate value is null or not an object.
+ *
+ * @param obj - The source object to traverse.
+ * @param keys - Array of keys representing the path to traverse.
+ * @returns The nested object, or empty object if path doesn't exist.
+ * @internal
+ * @example
+ * ```typescript
+ * getNestedObject({ a: { b: { c: 1 } } }, ['a', 'b']); // { c: 1 }
+ * getNestedObject({ a: null }, ['a', 'b']); // {}
+ * ```
+ */
+const getNestedObject = (obj: unknown, keys: string[]): Record<string, unknown> => {
+    let current: unknown = obj;
     for (const property of keys) {
-        // 检查当前值是否为 null 或非对象，或者当前属性在对象中不存在
-        if (current === null || typeof current !== 'object' || !current.hasOwnProperty(property)) {
-            return {}; // 如果中间任何值不存在，返回空对象
+        if (current === null || typeof current !== 'object' || !Object.prototype.hasOwnProperty.call(current, property)) {
+            return {};
         }
-        current = current[property]; // 访问下一层属性
+        current = (current as Record<string, unknown>)[property];
     }
-    return current;
+    return current as Record<string, unknown>;
 }
 
 /**
- * 获取嵌套定义key的值
- * @param data
- * @param key
+ * Gets a nested value by dot-notation key path.
+ *
+ * @param data - The source data to retrieve value from.
+ * @param key - Dot-separated path string (e.g., 'user.profile.name').
+ * @returns The value at the path, or undefined if path doesn't exist.
+ * @example
+ * ```typescript
+ * getNestedValue({ user: { name: 'John' } }, 'user.name'); // 'John'
+ * getNestedValue({ user: { name: 'John' } }, 'user.age'); // undefined
+ * getNestedValue({ a: { b: { c: 1 } } }, 'a.b.c'); // 1
+ * ```
  */
-const getNestedValue = (data: any, key: string): any => {
-    let keys = key.split('.');
-    let attr: string | undefined = keys.pop();
+const getNestedValue = (data: unknown, key: string): unknown => {
+    const keys = key.split('.');
+    const attr = keys.pop();
     if (attr == null) {
-        return null;
-    } else {
-        let obj: any = keys.length > 0 ? getNestedObject(data, keys) : data;
-        return obj[attr];
+        return undefined;
     }
+    const obj = keys.length > 0 ? getNestedObject(data, keys) : (data as Record<string, unknown>);
+    return obj[attr];
 }
 
-export default {getNestedObject, getNestedValue}
+export default { getNestedObject, getNestedValue };

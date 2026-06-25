@@ -3,21 +3,22 @@
 [![npm version](https://badge.fury.io/js/%40ticatec%2Fi18n.svg)](https://badge.fury.io/js/%40ticatec%2Fi18n)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A lightweight TypeScript internationalization (i18n) library for client-side applications featuring Proxy-based resource access, intelligent deep merge capabilities, and flexible override controls. Perfect for React, Svelte, and other modern frontend frameworks.
+A lightweight TypeScript internationalization (i18n) library for client-side applications featuring Proxy-based resource access, intelligent deep merge capabilities, and flexible override control. Perfect for React, Svelte, and other modern frontend frameworks.
 
 [中文](./README_CN.md) | English
 
 ## Features
 
-- 🌐 **Multi-language Support**: Seamlessly switch between different languages
-- 📦 **Dynamic Resource Loading**: Load translation resources from JSON files with automatic language suffix
-- 🔗 **Proxy-based Access**: Type-safe nested key access using modern JavaScript Proxy
-- 💾 **Persistent Language Settings**: Automatic language persistence in localStorage
-- 🔄 **Intelligent Deep Merge**: Smart merging with configurable override behavior
-- 🎯 **Full TypeScript Support**: Complete type definitions and IntelliSense support
-- 🏗️ **Flexible Resource Management**: Create isolated resource proxies for different modules
-- 🚀 **Zero Dependencies**: Lightweight with no external dependencies
-- ⚡ **Performance Optimized**: Efficient resource lookup and caching
+- 🌐 **Multi-language Support** - Seamlessly switch between different languages
+- 📦 **Dynamic Resource Loading** - Load translation resources from JSON files with automatic language suffix
+- 🔗 **Proxy-based Access** - Type-safe nested key access using modern JavaScript Proxy
+- 💾 **Persistent Language Settings** - Automatic language persistence in localStorage
+- 🔄 **Intelligent Deep Merge** - Smart merging with configurable override behavior
+- 🎯 **Full TypeScript Support** - Complete type definitions and IntelliSense support
+- 🏗️ **Flexible Resource Management** - Create isolated resource proxies for different modules
+- 🚀 **Zero Dependencies** - Lightweight with no external dependencies
+- ⚡ **Performance Optimized** - Efficient resource lookup
+- 🔒 **Prototype Pollution Protection** - Built-in security against prototype chain attacks
 
 ## Installation
 
@@ -63,19 +64,19 @@ i18n.language = 'en';
 // e.g., messages.json becomes messages_en.json
 ```
 
-### 4. Create Resource Proxy (New Feature)
+### 4. Create Resource Proxy
 
 ```typescript
 // Define default resources
 const defaultResources = {
   buttons: {
-    save: "保存",
-    cancel: "取消",
-    delete: "删除"
+    save: "Save",
+    cancel: "Cancel",
+    delete: "Delete"
   },
   messages: {
-    success: "操作成功",
-    error: "操作失败"
+    success: "Operation successful",
+    error: "Operation failed"
   }
 };
 
@@ -83,8 +84,8 @@ const defaultResources = {
 const texts = i18nUtils.createResourceProxy(defaultResources, 'myApp');
 
 // Use the proxy with type-safe access
-console.log(texts.buttons.save);     // "Save" (if English loaded) or "保存" (default)
-console.log(texts.messages.success); // "Success" (if English loaded) or "操作成功" (default)
+console.log(texts.buttons.save);     // "Save" (if English loaded) or "Save" (default)
+console.log(texts.messages.success); // "Success" (if English loaded) or "Operation successful" (default)
 ```
 
 ### 5. Get Translations
@@ -102,7 +103,7 @@ const buttonText = i18n.getText('buttons.submit'); // "Submit"
 // Get entire translation objects
 const allButtons = i18n.get('buttons');
 
-// New method - Format text with parameters
+// Format text with parameters (with template compilation)
 const formatted = i18nUtils.formatText("Hello {{user.name}}, you have {{count}} messages", {
   user: { name: "John" },
   count: 5
@@ -150,7 +151,7 @@ Your JSON translation files should follow this structure:
   },
   "user": {
     "profile": {
-      "title": "用户资料", 
+      "title": "用户资料",
       "edit": "编辑资料"
     }
   },
@@ -180,13 +181,15 @@ Your JSON translation files should follow this structure:
 - `getText(key: string, defaultText?: string): string`
   - Get translated text by key
   - Returns `defaultText` or error message if key not found
+  - Supports nested key access with dot notation
 
-- `get(key: string): any`
+- `get(key: string): unknown`
   - Get any value (including objects) by key
   - Supports nested key access with dot notation
 
-- `setResource(languagePackage: any, override?: boolean): void`
-  - Manually add translation resources
+- `setResource(langRes: Partial<I18nResource>, options?: I18nOptions): void`
+- `setResource(langRes: Partial<I18nResource>, override?: boolean): void`
+  - Add translation resources with deep merge
   - `override`: If `true` (default), overwrites existing keys; if `false`, only adds missing keys
 
 ### i18nUtils
@@ -197,25 +200,25 @@ Your JSON translation files should follow this structure:
   - Initialize language from localStorage
   - Default localStorage key is 'language'
 
-- `loadResources(res: string | Array<string>): Promise<void>`
+- `loadResources(res: string | string[]): Promise<void>`
   - Load translation resources from JSON files
   - Automatically appends language suffix to filenames
 
-- `createResourceProxy(defaultResource: any, namespace: string, basePath?: string): any`
-  - **New**: Create a Proxy-based resource accessor
-  - `defaultResource`: Default translation object
-  - `namespace`: Unique namespace for the resources
+- `createResourceProxy<T>(defaultResource: Partial<T>, namespace: string, basePath?: string): I18nProxy`
+  - Create a Proxy-based resource accessor with type safety
+  - `defaultResource`: Default translation object for fallback
+  - `namespace`: Unique namespace for resource isolation
   - `basePath`: Optional base path for nested access
-  - Returns a Proxy object with type-safe property access
+  - Returns a Proxy object with chained property access
 
-- `formatText(template: string, params: any): string`
-  - **New**: Format text with parameter interpolation
+- `formatText(template: string, params?: TemplateParams): string`
+  - Format text with parameter interpolation
   - Supports nested parameter access using dot notation
   - Template syntax: `{{parameter.path}}`
 
-- `getI18nText(token: Record<string, string>, params?: any): string`
-  - **New**: Get formatted text using key/value token approach
-  - `token`: Object with `key` and `text` properties
+- `getI18nText<T>(token: I18nToken<T>, params?: TemplateParams): string`
+  - Get formatted text using key/value token approach
+  - `token`: Object with `key` and optional `text` properties
   - `params`: Optional parameters for text interpolation
 
 ## Advanced Usage
@@ -238,16 +241,16 @@ console.log(texts.buttons.save); // Uses loaded translation or falls back to def
 ```typescript
 // User module resources
 const userDefaults = {
-  profile: { title: "用户资料", edit: "编辑" },
-  settings: { title: "用户设置", language: "语言" }
+  profile: { title: "User Profile", edit: "Edit" },
+  settings: { title: "Settings", language: "Language" }
 };
 
 const userTexts = i18nUtils.createResourceProxy(userDefaults, 'userModule');
 
-// Order module resources  
+// Order module resources
 const orderDefaults = {
-  list: { title: "订单列表", status: "状态" },
-  detail: { title: "订单详情", amount: "金额" }
+  list: { title: "Order List", status: "Status" },
+  detail: { title: "Order Details", amount: "Amount" }
 };
 
 const orderTexts = i18nUtils.createResourceProxy(orderDefaults, 'orderModule');
@@ -277,13 +280,13 @@ const result = i18nUtils.formatText(template, params);
 ```typescript
 // Define text tokens
 const TEXTS = {
-  WELCOME_MESSAGE: { 
-    key: 'welcome.message', 
-    text: 'Welcome {{name}}!' 
+  WELCOME_MESSAGE: {
+    key: 'welcome.message',
+    text: 'Welcome {{name}}!'
   },
-  ERROR_REQUIRED: { 
-    key: 'errors.required', 
-    text: 'This field is required' 
+  ERROR_REQUIRED: {
+    key: 'errors.required',
+    text: 'This field is required'
   }
 };
 
@@ -309,7 +312,7 @@ i18n.setResource(englishResources, true);
 
 ```typescript
 // Resource proxy shows clear error messages for missing keys
-console.log(texts.nonExistent.key); 
+console.log(texts.nonExistent.key);
 // Output: "missing key: [myApp.nonExistent.key]"
 
 // Traditional method with fallback
@@ -332,11 +335,11 @@ import { i18nUtils } from '@ticatec/i18n';
 const LoginComponent: React.FC = () => {
   // Component-specific resources
   const componentTexts = i18nUtils.createResourceProxy({
-    title: "登录",
-    username: "用户名", 
-    password: "密码",
-    submit: "登录",
-    forgotPassword: "忘记密码"
+    title: "Login",
+    username: "Username",
+    password: "Password",
+    submit: "Sign In",
+    forgotPassword: "Forgot Password?"
   }, 'loginComponent');
 
   return (
@@ -345,10 +348,10 @@ const LoginComponent: React.FC = () => {
       <form>
         <label>{componentTexts.username}</label>
         <input type="text" />
-        
+
         <label>{componentTexts.password}</label>
         <input type="password" />
-        
+
         <button type="submit">{componentTexts.submit}</button>
         <a href="/forgot">{componentTexts.forgotPassword}</a>
       </form>
@@ -362,11 +365,11 @@ const LoginComponent: React.FC = () => {
 ```svelte
 <script>
   import { i18nUtils } from '@ticatec/i18n';
-  
+
   // Create component texts
   const texts = i18nUtils.createResourceProxy({
-    welcome: "欢迎",
-    description: "这是一个示例应用"
+    welcome: "Welcome",
+    description: "This is a sample application"
   }, 'homeComponent');
 </script>
 
@@ -396,6 +399,13 @@ This library uses modern JavaScript features:
 
 Ensure your target browsers support these features or include appropriate polyfills.
 
+## Performance Considerations
+
+- **Proxy Creation**: Create resource proxies once and reuse them
+- **Resource Loading**: Load resources asynchronously during app initialization
+- **Memory Usage**: Each proxy maintains minimal overhead
+- **Lookup Performance**: Direct property access is faster than string-based key lookup
+
 ## Complete Example
 
 ```typescript
@@ -403,46 +413,46 @@ import i18n, { i18nUtils, getI18nText } from '@ticatec/i18n';
 
 class App {
   private texts: any;
-  
+
   async init() {
     // Initialize language from localStorage
     i18nUtils.initialize();
-    
+
     // Set default language if none exists
     if (!i18n.language) {
       i18n.language = 'en';
     }
-    
+
     // Create application texts with defaults
     this.texts = i18nUtils.createResourceProxy({
       app: {
-        title: "我的应用",
-        subtitle: "欢迎使用"
+        title: "My Application",
+        subtitle: "Welcome"
       },
       navigation: {
-        home: "首页",
-        about: "关于",
-        contact: "联系"
+        home: "Home",
+        about: "About",
+        contact: "Contact"
       },
       actions: {
-        save: "保存",
-        cancel: "取消",
-        delete: "删除"
+        save: "Save",
+        cancel: "Cancel",
+        delete: "Delete"
       }
     }, 'mainApp');
-    
+
     // Load translation resources
     await i18nUtils.loadResources([
       './locales/common.json',
       './locales/navigation.json'
     ]);
-    
+
     this.render();
   }
-  
+
   render() {
     document.title = this.texts.app.title;
-    
+
     const nav = document.getElementById('navigation');
     if (nav) {
       nav.innerHTML = `
@@ -452,16 +462,16 @@ class App {
       `;
     }
   }
-  
+
   async changeLanguage(lang: string) {
     i18n.language = lang;
     localStorage.setItem('language', lang);
-    
+
     await i18nUtils.loadResources([
       './locales/common.json',
       './locales/navigation.json'
     ]);
-    
+
     this.render();
   }
 }
@@ -473,33 +483,20 @@ app.init();
 
 ## Migration Guide
 
-### From v0.1.x to v0.2.x
+### From v0.2.x to v0.3.x
 
 **New Features:**
-- `createResourceProxy()` for Proxy-based resource access
-- `formatText()` for parameter interpolation
-- `setResource()` now supports override control
-- Enhanced error messages with full key paths
+- Template compilation for improved `formatText` performance
+- Complete TypeScript type definitions
+- Full JSDoc documentation
+- Enhanced type safety with generics
+
+**Bug Fixes:**
+- Fixed `formatText` nested parameter access
+- Improved error messages for missing keys
 
 **Breaking Changes:**
 - None - all existing APIs remain compatible
-
-**Recommended Migration:**
-```typescript
-// Old approach (still works)
-const text = i18n.getText('buttons.save');
-
-// New approach (recommended)
-const texts = i18nUtils.createResourceProxy(defaults, 'myNamespace');
-const text = texts.buttons.save; // Type-safe with fallback
-```
-
-## Performance Considerations
-
-- **Proxy Creation**: Create resource proxies once and reuse them
-- **Resource Loading**: Load resources asynchronously during app initialization
-- **Memory Usage**: Each proxy maintains minimal overhead
-- **Lookup Performance**: Direct property access is faster than string-based key lookup
 
 ## Best Practices
 
@@ -525,4 +522,4 @@ Contributions are welcome! Please read our contributing guidelines and submit pu
 
 ---
 
-**Copyright © 2023 Ticatec. All rights reserved.**
+**Copyright © 2023-2024 Ticatec. All rights reserved.**

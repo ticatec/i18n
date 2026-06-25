@@ -9,15 +9,16 @@
 
 ## 特性
 
-- 🌐 **多语言支持**：无缝切换不同语言
-- 📦 **动态资源加载**：从 JSON 文件加载翻译资源，自动添加语言后缀
-- 🔗 **基于 Proxy 的访问**：使用现代 JavaScript Proxy 实现类型安全的嵌套键访问
-- 💾 **持久化语言设置**：在 localStorage 中自动持久化语言设置
-- 🔄 **智能深度合并**：具有可配置覆盖行为的智能合并
-- 🎯 **完整 TypeScript 支持**：完整的类型定义和智能提示支持
-- 🏗️ **灵活的资源管理**：为不同模块创建隔离的资源代理
-- 🚀 **零依赖**：轻量级，无外部依赖
-- ⚡ **性能优化**：高效的资源查找和缓存
+- 🌐 **多语言支持** - 无缝切换不同语言
+- 📦 **动态资源加载** - 从 JSON 文件加载翻译资源，自动添加语言后缀
+- 🔗 **基于 Proxy 的访问** - 使用现代 JavaScript Proxy 实现类型安全的嵌套键访问
+- 💾 **持久化语言设置** - 在 localStorage 中自动持久化语言设置
+- 🔄 **智能深度合并** - 具有可配置覆盖行为的智能合并
+- 🎯 **完整 TypeScript 支持** - 完整的类型定义和智能提示支持
+- 🏗️ **灵活的资源管理** - 为不同模块创建隔离的资源代理
+- 🚀 **零依赖** - 轻量级，无外部依赖
+- ⚡ **性能优化** - 高效资源查找
+- 🔒 **原型链污染防护** - 内置安全防护机制
 
 ## 安装
 
@@ -63,7 +64,7 @@ i18n.language = 'en';
 // 例如：messages.json 变成 messages_en.json
 ```
 
-### 4. 创建资源代理（新特性）
+### 4. 创建资源代理
 
 ```typescript
 // 定义默认资源
@@ -102,7 +103,7 @@ const buttonText = i18n.getText('buttons.submit'); // "Submit"
 // 获取整个翻译对象
 const allButtons = i18n.get('buttons');
 
-// 新方法 - 使用参数格式化文本
+// 新方法 - 使用参数格式化文本（带模板编译）
 const formatted = i18nUtils.formatText("你好 {{user.name}}，你有 {{count}} 条消息", {
   user: { name: "张三" },
   count: 5
@@ -150,7 +151,7 @@ const formatted = i18nUtils.formatText("你好 {{user.name}}，你有 {{count}} 
   },
   "user": {
     "profile": {
-      "title": "用户资料", 
+      "title": "用户资料",
       "edit": "编辑资料"
     }
   },
@@ -180,12 +181,14 @@ const formatted = i18nUtils.formatText("你好 {{user.name}}，你有 {{count}} 
 - `getText(key: string, defaultText?: string): string`
   - 根据键获取翻译文本
   - 如果键不存在，返回 `defaultText` 或错误消息
+  - 支持使用点号进行嵌套键访问
 
-- `get(key: string): any`
+- `get(key: string): unknown`
   - 根据键获取任何值（包括对象）
-  - 支持使用点符号进行嵌套键访问
+  - 支持使用点号进行嵌套键访问
 
-- `setResource(languagePackage: any, override?: boolean): void`
+- `setResource(langRes: Partial<I18nResource>, options?: I18nOptions): void`
+- `setResource(langRes: Partial<I18nResource>, override?: boolean): void`
   - 手动添加翻译资源
   - `override`：如果为 `true`（默认），覆盖现有键；如果为 `false`，仅添加缺失的键
 
@@ -197,25 +200,25 @@ const formatted = i18nUtils.formatText("你好 {{user.name}}，你有 {{count}} 
   - 从 localStorage 初始化语言
   - 默认 localStorage 键为 'language'
 
-- `loadResources(res: string | Array<string>): Promise<void>`
+- `loadResources(res: string | string[]): Promise<void>`
   - 从 JSON 文件加载翻译资源
   - 自动为文件名添加语言后缀
 
-- `createResourceProxy(defaultResource: any, namespace: string, basePath?: string): any`
-  - **新增**：创建基于 Proxy 的资源访问器
-  - `defaultResource`：默认翻译对象
+- `createResourceProxy<T>(defaultResource: Partial<T>, namespace: string, basePath?: string): I18nProxy`
+  - **类型安全**：创建基于 Proxy 的资源访问器
+  - `defaultResource`：默认翻译对象（用于回退）
   - `namespace`：资源的唯一命名空间
   - `basePath`：可选的嵌套访问基础路径
-  - 返回具有类型安全属性访问的 Proxy 对象
+  - 返回具有链式属性访问的 Proxy 对象
 
-- `formatText(template: string, params: any): string`
-  - **新增**：使用参数插值格式化文本
-  - 支持使用点符号进行嵌套参数访问
+- `formatText(template: string, params?: TemplateParams): string`
+  - 使用参数插值格式化文本
+  - 支持使用点号进行嵌套参数访问
   - 模板语法：`{{parameter.path}}`
 
-- `getI18nText(token: Record<string, string>, params?: any): string`
-  - **新增**：使用键/值令牌方式获取格式化文本
-  - `token`：包含 `key` 和 `text` 属性的对象
+- `getI18nText<T>(token: I18nToken<T>, params?: TemplateParams): string`
+  - 使用键/值令牌方式获取格式化文本
+  - `token`：包含 `key` 和可选 `text` 属性的对象
   - `params`：用于文本插值的可选参数
 
 ## 高级用法
@@ -244,7 +247,7 @@ const userDefaults = {
 
 const userTexts = i18nUtils.createResourceProxy(userDefaults, 'userModule');
 
-// 订单模块资源  
+// 订单模块资源
 const orderDefaults = {
   list: { title: "订单列表", status: "状态" },
   detail: { title: "订单详情", amount: "金额" }
@@ -277,13 +280,13 @@ const result = i18nUtils.formatText(template, params);
 ```typescript
 // 定义文本令牌
 const TEXTS = {
-  WELCOME_MESSAGE: { 
-    key: 'welcome.message', 
-    text: '欢迎 {{name}}！' 
+  WELCOME_MESSAGE: {
+    key: 'welcome.message',
+    text: '欢迎 {{name}}！'
   },
-  ERROR_REQUIRED: { 
-    key: 'errors.required', 
-    text: '此字段为必填项' 
+  ERROR_REQUIRED: {
+    key: 'errors.required',
+    text: '此字段为必填项'
   }
 };
 
@@ -292,24 +295,11 @@ const welcomeText = getI18nText(TEXTS.WELCOME_MESSAGE, { name: '张三' });
 console.log(welcomeText); // "欢迎 张三！" 或翻译版本
 ```
 
-### 带覆盖控制的自定义资源加载
-
-```typescript
-// 首先，设置默认资源（不覆盖现有资源）
-i18n.setResource(defaultResources, false);
-
-// 然后，加载特定语言资源（覆盖模式）
-const englishResources = await loadJsonFile('./locales/en.json');
-i18n.setResource(englishResources, true);
-
-// 结果：英文翻译覆盖默认值，缺失的键使用默认值
-```
-
 ### 错误处理和调试
 
 ```typescript
 // 资源代理为缺失的键显示清晰的错误消息
-console.log(texts.nonExistent.key); 
+console.log(texts.nonExistent.key);
 // 输出："missing key: [myApp.nonExistent.key]"
 
 // 带回退的传统方法
@@ -333,7 +323,7 @@ const LoginComponent: React.FC = () => {
   // 组件特定的资源
   const componentTexts = i18nUtils.createResourceProxy({
     title: "登录",
-    username: "用户名", 
+    username: "用户名",
     password: "密码",
     submit: "登录",
     forgotPassword: "忘记密码"
@@ -345,10 +335,10 @@ const LoginComponent: React.FC = () => {
       <form>
         <label>{componentTexts.username}</label>
         <input type="text" />
-        
+
         <label>{componentTexts.password}</label>
         <input type="password" />
-        
+
         <button type="submit">{componentTexts.submit}</button>
         <a href="/forgot">{componentTexts.forgotPassword}</a>
       </form>
@@ -362,7 +352,7 @@ const LoginComponent: React.FC = () => {
 ```svelte
 <script>
   import { i18nUtils } from '@ticatec/i18n';
-  
+
   // 创建组件文本
   const texts = i18nUtils.createResourceProxy({
     welcome: "欢迎",
@@ -396,6 +386,13 @@ const LoginComponent: React.FC = () => {
 
 请确保您的目标浏览器支持这些特性，或包含适当的 polyfill。
 
+## 性能考虑
+
+- **Proxy 创建**：创建资源代理一次并重复使用
+- **资源加载**：在应用初始化期间异步加载资源
+- **内存使用**：每个代理维持最小开销
+- **查找性能**：直接属性访问比基于字符串的键查找更快
+
 ## 完整示例
 
 ```typescript
@@ -403,16 +400,16 @@ import i18n, { i18nUtils, getI18nText } from '@ticatec/i18n';
 
 class App {
   private texts: any;
-  
+
   async init() {
     // 从 localStorage 初始化语言
     i18nUtils.initialize();
-    
+
     // 如果不存在语言设置，设置默认语言
     if (!i18n.language) {
       i18n.language = 'zh';
     }
-    
+
     // 使用默认值创建应用程序文本
     this.texts = i18nUtils.createResourceProxy({
       app: {
@@ -430,19 +427,19 @@ class App {
         delete: "删除"
       }
     }, 'mainApp');
-    
+
     // 加载翻译资源
     await i18nUtils.loadResources([
       './locales/common.json',
       './locales/navigation.json'
     ]);
-    
+
     this.render();
   }
-  
+
   render() {
     document.title = this.texts.app.title;
-    
+
     const nav = document.getElementById('navigation');
     if (nav) {
       nav.innerHTML = `
@@ -452,16 +449,16 @@ class App {
       `;
     }
   }
-  
+
   async changeLanguage(lang: string) {
     i18n.language = lang;
     localStorage.setItem('language', lang);
-    
+
     await i18nUtils.loadResources([
       './locales/common.json',
       './locales/navigation.json'
     ]);
-    
+
     this.render();
   }
 }
@@ -473,33 +470,20 @@ app.init();
 
 ## 迁移指南
 
-### 从 v0.1.x 到 v0.2.x
+### 从 v0.2.x 到 v0.3.x
 
 **新特性：**
-- `createResourceProxy()` 基于 Proxy 的资源访问
-- `formatText()` 参数插值功能
-- `setResource()` 现在支持覆盖控制
-- 增强的错误消息，包含完整键路径
+- 模板编译提升 `formatText` 性能
+- 完整的 TypeScript 类型定义
+- 全面的 JSDoc 文档
+- 增强的类型安全支持泛型
+
+**Bug 修复：**
+- 修复 `formatText` 嵌套参数访问
+- 改进缺失键的错误消息
 
 **破坏性变更：**
 - 无 - 所有现有 API 保持兼容
-
-**推荐的迁移方式：**
-```typescript
-// 旧方法（仍然有效）
-const text = i18n.getText('buttons.save');
-
-// 新方法（推荐）
-const texts = i18nUtils.createResourceProxy(defaults, 'myNamespace');
-const text = texts.buttons.save; // 类型安全且有回退
-```
-
-## 性能考虑
-
-- **Proxy 创建**：创建资源代理一次并重复使用
-- **资源加载**：在应用初始化期间异步加载资源
-- **内存使用**：每个代理维持最小开销
-- **查找性能**：直接属性访问比基于字符串的键查找更快
 
 ## 最佳实践
 
@@ -525,4 +509,4 @@ MIT 许可证 - 详情请参见 [LICENSE](LICENSE) 文件。
 
 ---
 
-**版权所有 © 2023 Ticatec。保留所有权利。**
+**版权所有 © 2023-2024 Ticatec。保留所有权利。**
