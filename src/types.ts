@@ -18,11 +18,18 @@ export type NestedValue<T, P extends string> = P extends `${infer K}.${infer Res
     ? K extends keyof T
         ? T[K] extends object
             ? NestedValue<T[K], Rest>
-            : any
-        : any
+            : T[K]
+        : unknown
     : P extends keyof T
         ? T[P]
-        : any;
+        : unknown;
+
+export type NestedKeyOf<T> = T extends object
+    ? { [K in keyof T & (string | number)]: T[K] extends object
+        ? `${K}` | `${K}.${NestedKeyOf<T[K]>}`
+        : `${K}`
+      }[keyof T & (string | number)]
+    : string;
 
 /**
  * Translation resource interface supporting nested structures.
@@ -30,7 +37,7 @@ export type NestedValue<T, P extends string> = P extends `${infer K}.${infer Res
  *
  * @example
  * ```typescript
- * interface AppTranslations extends I18nResource {
+ * interface AppTranslations {
  *   welcome: string;
  *   user: {
  *     profile: {
@@ -56,15 +63,15 @@ export type I18nValue = string | string[] | number | boolean | I18nResource | I1
  *
  * @example
  * ```typescript
- * const WELCOME_TOKEN: I18nToken = {
- *   key: 'welcome.message',
- *   text: 'Welcome {{name}}!' // Default fallback
+ * const WELCOME_TOKEN: I18nToken<AppTranslations> = {
+ *   key: 'user.profile.title',
+ *   text: 'User Profile' // Default fallback
  * };
  * ```
  */
 export interface I18nToken<T extends I18nResource = I18nResource> {
     /** Translation key path (supports dot notation for nested keys). */
-    key: string;
+    key: keyof T extends never ? string : NestedKeyOf<T>;
     /** Optional default text used when key is not found. */
     text?: string;
 }
@@ -93,25 +100,50 @@ export interface TemplateParams {
 export type TemplateParamValue = string | number | boolean | TemplateParams | null | undefined;
 
 /**
- * Resource proxy interface supporting chained property access and function calls.
- * Provides automatic fallback to default resources for missing keys.
+ * Base callable proxy node representation.
+ * When invoked as a function, formats text with optional parameters.
+ * When converted via String() or .toString(), returns the translation text or key placeholder.
+ */
+export type ResourceProxyNode = ((params?: TemplateParams) => string) & {
+    toString(): string;
+};
+
+/**
+ * Dynamic fallback proxy for unconstrained resource structures (I18nResource).
+ */
+export type DynamicResourceProxy = ResourceProxyNode & {
+    [key: string]: DynamicResourceProxy;
+};
+
+/**
+ * Resource proxy type supporting chained property access, function calls,
+ * and explicit string conversion via `.toString()` or `String(...)`.
+ * Type-checked strictly against resource structure T.
  *
  * @example
  * ```typescript
- * const texts = createResourceProxy({ welcome: 'Hello' }, 'app');
- * texts.welcome; // "Hello"
- * texts.welcome({ name: 'John' }); // With parameters
- * String(texts.missing); // "missing key: [app.missing]"
+ * const texts = createResourceProxy({ welcome: 'Hello {{name}}' }, 'app');
+ * texts.welcome();                      // "Hello {{name}}"
+ * texts.welcome({ name: 'John' });      // "Hello John"
+ * String(texts.welcome);                // "Hello {{name}}"
  * ```
  */
-export interface I18nProxy {
-    /** String conversion for getting translation text. */
-    toString(): string;
-    /** Function call for parameter interpolation. */
-    (params?: TemplateParams): string;
-    /** Property access for chained nested navigation. */
-    [key: string]: I18nProxy | string | Function;
-}
+export type ResourceProxy<T> = [T] extends [I18nResource]
+    ? keyof T extends never
+        ? DynamicResourceProxy
+        : {
+            [K in keyof T]: T[K] extends string
+                ? ResourceProxyNode
+                : T[K] extends Record<string, any>
+                ? ResourceProxy<T[K]> & ResourceProxyNode
+                : ResourceProxyNode;
+        } & ResourceProxyNode
+    : DynamicResourceProxy;
+
+/**
+ * Alias for backward compatibility.
+ */
+export type I18nProxy = DynamicResourceProxy;
 
 /**
  * Options for setting translation resources.
@@ -127,6 +159,20 @@ export interface I18nOptions {
 }
 
 /**
+ * Options for loading resource files.
+ */
+export interface LoadResourcesOptions {
+    /** Whether to load resource files in parallel (default: true). */
+    parallel?: boolean;
+    /** Optional override setting when merging into i18n context (default: true). */
+    override?: boolean;
+    /** Target language (default: current active language). */
+    language?: string;
+    /** Whether to log error details to console (default: false). */
+    logErrors?: boolean;
+}
+
+/**
  * Result of loading translation resources.
  * Provides statistics about loaded and failed resources.
  */
@@ -135,4 +181,6 @@ export interface LoadResourcesResult {
     loaded: number;
     /** Number of resources that failed to load. */
     failed: number;
+    /** List of resource URLs that failed to load. */
+    failedUrls: string[];
 }

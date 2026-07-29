@@ -9,10 +9,10 @@ A lightweight TypeScript internationalization (i18n) library for client-side app
 
 ## Features
 
-- 🌐 **Multi-language Support** - Seamlessly switch between different languages
+- 🌐 **Multi-language Support** - Language persistence with automatic resource loading for modern web applications
 - 📦 **Dynamic Resource Loading** - Load translation resources from JSON files with automatic language suffix
 - 🔗 **Proxy-based Access** - Type-safe nested key access using modern JavaScript Proxy
-- 💾 **Persistent Language Settings** - Automatic language persistence in localStorage
+- 💾 **Persistent Language Settings** - Automatic language persistence in localStorage, taking effect upon application refresh
 - 🔄 **Intelligent Deep Merge** - Smart merging with configurable override behavior
 - 🎯 **Full TypeScript Support** - Complete type definitions and IntelliSense support
 - 🏗️ **Flexible Resource Management** - Create isolated resource proxies for different modules
@@ -23,7 +23,8 @@ A lightweight TypeScript internationalization (i18n) library for client-side app
 ## Installation
 
 ```bash
-npm i @ticatec/i18n
+pnpm add @ticatec/i18n
+# or: npm i @ticatec/i18n
 ```
 
 ## Quick Start
@@ -57,7 +58,7 @@ await i18nUtils.loadResources([
 ### 3. Set Language
 
 ```typescript
-// Set current language
+// Set current language (persists to localStorage if initialize() was called)
 i18n.language = 'en';
 
 // The library automatically appends language suffix to resource files
@@ -67,8 +68,20 @@ i18n.language = 'en';
 ### 4. Create Resource Proxy
 
 ```typescript
-// Define default resources
-const defaultResources = {
+// Define default resources interface
+interface MyResources {
+  buttons: {
+    save: string;
+    cancel: string;
+    delete: string;
+  };
+  messages: {
+    success: string;
+    error: string;
+  };
+}
+
+const defaultResources: MyResources = {
   buttons: {
     save: "Save",
     cancel: "Cancel",
@@ -81,11 +94,12 @@ const defaultResources = {
 };
 
 // Create a resource proxy with automatic fallback
-const texts = i18nUtils.createResourceProxy(defaultResources, 'myApp');
+const texts = i18nUtils.createResourceProxy<MyResources>(defaultResources, 'myApp');
 
-// Use the proxy with type-safe access
-console.log(texts.buttons.save);     // "Save" (if English loaded) or "Save" (default)
-console.log(texts.messages.success); // "Success" (if English loaded) or "Operation successful" (default)
+// Use the proxy with type-safe access and parameter interpolation
+console.log(texts.buttons.save());      // "Save" (invoked as function)
+console.log(String(texts.buttons.save)); // "Save" (explicit string conversion)
+console.log(texts.messages.success({ user: 'John' })); // Parameter interpolation
 ```
 
 ### 5. Get Translations
@@ -190,26 +204,33 @@ Your JSON translation files should follow this structure:
 - `setResource(langRes: Partial<I18nResource>, options?: I18nOptions): void`
 - `setResource(langRes: Partial<I18nResource>, override?: boolean): void`
   - Add translation resources with deep merge
-  - `override`: If `true` (default), overwrites existing keys; if `false`, only adds missing keys
+  - `options.override`: If `true` (default), overwrites existing keys; if `false`, only adds missing keys
+
+- `clear(): void`
+  - Clear all loaded translation resources
+
+- `reset(): void`
+  - Completely reset all translation resources, current language setting, and storage key
 
 ### i18nUtils
 
 #### Methods
 
 - `initialize(key?: string): void`
-  - Initialize language from localStorage
+  - Initialize language from localStorage and automatically save future language changes to localStorage
   - Default localStorage key is 'language'
 
-- `loadResources(res: string | string[]): Promise<void>`
-  - Load translation resources from JSON files
+- `loadResources(res: string | string[], options?: LoadResourcesOptions): Promise<LoadResourcesResult>`
+  - Load translation resources from JSON files (supports parallel loading)
   - Automatically appends language suffix to filenames
+  - Returns `{ loaded: number, failed: number, failedUrls: string[] }`
 
-- `createResourceProxy<T>(defaultResource: Partial<T>, namespace: string, basePath?: string): I18nProxy`
-  - Create a Proxy-based resource accessor with type safety
+- `createResourceProxy<T>(defaultResource: Partial<T>, namespace: string, basePath?: string): ResourceProxy<T>`
+  - Create a Proxy-based resource accessor with full type safety derived from `T`
   - `defaultResource`: Default translation object for fallback
   - `namespace`: Unique namespace for resource isolation
   - `basePath`: Optional base path for nested access
-  - Returns a Proxy object with chained property access
+  - Returns a Proxy object supporting function call `()` and explicit `.toString()` conversion
 
 - `formatText(template: string, params?: TemplateParams): string`
   - Format text with parameter interpolation
@@ -233,7 +254,7 @@ const texts = i18nUtils.createResourceProxy(defaultResources, 'myApp');
 await i18nUtils.loadResources('./locales/myApp.json');
 
 // The proxy automatically uses loaded translations with fallback to defaults
-console.log(texts.buttons.save); // Uses loaded translation or falls back to default
+console.log(texts.buttons.save()); // Uses loaded translation or falls back to default
 ```
 
 ### Module-specific Resource Management
@@ -256,8 +277,8 @@ const orderDefaults = {
 const orderTexts = i18nUtils.createResourceProxy(orderDefaults, 'orderModule');
 
 // Each proxy operates independently
-console.log(userTexts.profile.title);  // User module text
-console.log(orderTexts.list.title);    // Order module text
+console.log(userTexts.profile.title());  // User module text
+console.log(orderTexts.list.title());    // Order module text
 ```
 
 ### Text Formatting with Parameters
@@ -312,7 +333,7 @@ i18n.setResource(englishResources, true);
 
 ```typescript
 // Resource proxy shows clear error messages for missing keys
-console.log(texts.nonExistent.key);
+console.log(String(texts.nonExistent.key));
 // Output: "missing key: [myApp.nonExistent.key]"
 
 // Traditional method with fallback
@@ -344,16 +365,16 @@ const LoginComponent: React.FC = () => {
 
   return (
     <div>
-      <h1>{componentTexts.title}</h1>
+      <h1>{componentTexts.title()}</h1>
       <form>
-        <label>{componentTexts.username}</label>
+        <label>{componentTexts.username()}</label>
         <input type="text" />
 
-        <label>{componentTexts.password}</label>
+        <label>{componentTexts.password()}</label>
         <input type="password" />
 
-        <button type="submit">{componentTexts.submit}</button>
-        <a href="/forgot">{componentTexts.forgotPassword}</a>
+        <button type="submit">{componentTexts.submit()}</button>
+        <a href="/forgot">{componentTexts.forgotPassword()}</a>
       </form>
     </div>
   );
@@ -374,8 +395,8 @@ const LoginComponent: React.FC = () => {
 </script>
 
 <main>
-  <h1>{texts.welcome}</h1>
-  <p>{texts.description}</p>
+  <h1>{texts.welcome()}</h1>
+  <p>{texts.description()}</p>
 </main>
 ```
 
@@ -451,14 +472,14 @@ class App {
   }
 
   render() {
-    document.title = this.texts.app.title;
+    document.title = this.texts.app.title();
 
     const nav = document.getElementById('navigation');
     if (nav) {
       nav.innerHTML = `
-        <a href="/">${this.texts.navigation.home}</a>
-        <a href="/about">${this.texts.navigation.about}</a>
-        <a href="/contact">${this.texts.navigation.contact}</a>
+        <a href="/">${this.texts.navigation.home()}</a>
+        <a href="/about">${this.texts.navigation.about()}</a>
+        <a href="/contact">${this.texts.navigation.contact()}</a>
       `;
     }
   }

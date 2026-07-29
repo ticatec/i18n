@@ -1,5 +1,5 @@
-import utils from "./utils";
-import type { I18nResource, I18nOptions } from "./types";
+import utils from "./utils.js";
+import type { I18nResource, I18nOptions } from "./types.js";
 
 /**
  * I18n context class for managing translation resources and language settings.
@@ -18,6 +18,22 @@ import type { I18nResource, I18nOptions } from "./types";
 class I18nContext<T extends I18nResource = I18nResource> {
     private resources: Partial<T> = {};
     private _language: string = '';
+    private _storageKey?: string;
+
+    /**
+     * Sets the localStorage key used for persisting the language selection.
+     * @param key The key name in localStorage.
+     */
+    setStorageKey(key: string): void {
+        this._storageKey = key;
+    }
+
+    /**
+     * Gets the configured localStorage key.
+     */
+    getStorageKey(): string | undefined {
+        return this._storageKey;
+    }
 
     /**
      * Checks if a value is a plain object (not null, not array, typeof object).
@@ -100,10 +116,6 @@ class I18nContext<T extends I18nResource = I18nResource> {
      *
      * @param langRes - Partial translation resources to add.
      * @param options - Options object with override boolean.
-     * @example
-     * ```typescript
-     * setResource({ welcome: 'Hello' }, { override: true });
-     * ```
      */
     setResource(langRes: Partial<T>, options?: I18nOptions): void;
     /**
@@ -111,42 +123,72 @@ class I18nContext<T extends I18nResource = I18nResource> {
      *
      * @param langRes - Partial translation resources to add.
      * @param override - Whether to override existing keys. Default is true.
-     * @example
-     * ```typescript
-     * setResource({ welcome: 'Hello' }, true); // Override
-     * setResource({ welcome: 'Hello' }, false); // Don't override
-     * ```
      */
     setResource(langRes: Partial<T>, override?: boolean): void;
     setResource(langRes: Partial<T>, optionsOrOverride?: I18nOptions | boolean): void {
         const override = typeof optionsOrOverride === 'boolean'
             ? optionsOrOverride
             : optionsOrOverride?.override !== false;
+
         this.resources = this.deepMerge(this.resources, langRes, override) as Partial<T>;
     }
 
     /**
-     * Sets the current language.
+     * Safely accesses window.localStorage without throwing SecurityError in restricted environments.
+     */
+    private getLocalStorage(): Storage | null {
+        try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+                return window.localStorage;
+            }
+        } catch {
+            // Silently ignore SecurityError or restricted iframe exceptions
+        }
+        return null;
+    }
+
+    /**
+     * Sets the current language. Automatically syncs to localStorage if initialize() was called.
      * @param value - The language code to set.
-     * @example
-     * ```typescript
-     * i18n.language = 'en';
-     * ```
      */
     set language(value: string) {
-        this._language = value || '';
+        const langStr = value || '';
+        this._language = langStr;
+
+        if (this._storageKey) {
+            const storage = this.getLocalStorage();
+            if (storage) {
+                try {
+                    storage.setItem(this._storageKey, langStr);
+                } catch {
+                    // Silently ignore quota / write restrictions
+                }
+            }
+        }
     }
 
     /**
      * Gets the current language.
      * @returns The current language code.
-     * @example
-     * ```typescript
-     * console.log(i18n.language); // 'en'
-     * ```
      */
     get language(): string {
         return this._language;
+    }
+
+    /**
+     * Clears all loaded translation resources.
+     */
+    clear(): void {
+        this.resources = {};
+    }
+
+    /**
+     * Completely resets all translation resources, language settings, and storage key.
+     */
+    reset(): void {
+        this.resources = {};
+        this._language = '';
+        this._storageKey = undefined;
     }
 
     /**
@@ -156,15 +198,9 @@ class I18nContext<T extends I18nResource = I18nResource> {
      * @param key - Translation key (supports dot notation for nested keys).
      * @param defaultText - Optional default text if key is not found.
      * @returns Translated text, default text, or error message.
-     * @example
-     * ```typescript
-     * getText('welcome'); // "Welcome"
-     * getText('buttons.submit'); // "Submit"
-     * getText('missing', 'Default'); // "Default"
-     * ```
      */
     getText<K extends string>(key: K, defaultText?: string): string {
-        const text = utils.getNestedValue(this.resources, key);
+        const text = this.get(key);
         if (text == null || typeof text === 'object') {
             return defaultText !== undefined ? defaultText : `Invalid key: ${key}`;
         }
@@ -177,11 +213,6 @@ class I18nContext<T extends I18nResource = I18nResource> {
      *
      * @param key - Resource key (supports dot notation for nested keys).
      * @returns The value at the key path, or undefined if not found.
-     * @example
-     * ```typescript
-     * get('welcome'); // "Welcome"
-     * get('buttons'); // { submit: "Submit", cancel: "Cancel" }
-     * ```
      */
     get<K extends string>(key: K): unknown {
         return utils.getNestedValue(this.resources, key);

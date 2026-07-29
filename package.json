@@ -1,16 +1,19 @@
 {
   "name": "@ticatec/i18n",
-  "version": "0.3.1",
+  "version": "0.5.0",
   "description": "A lightweight frontend internationalization (i18n) solution with Proxy-based resource access, deep merge capabilities, and flexible override controls for React, Svelte and other modern frameworks.",
   "main": "./dist/index.js",
   "scripts": {
     "clean": "rm -rf ./dist",
     "build": "tsc",
-    "prepare": "npm run clean && npm run build",
-    "publish:public": "npm publish --access public",
+    "typecheck": "tsc --noEmit",
+    "prepare": "pnpm run clean && pnpm run build",
+    "publish:public": "pnpm publish --access public",
     "test": "vitest",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:run": "vitest run --exclude src/__tests__/dist.test.ts",
+    "test:coverage": "vitest run --coverage --exclude src/__tests__/dist.test.ts",
+    "test:dist": "pnpm run build && vitest run src/__tests__/dist.test.ts",
+    "check": "pnpm run typecheck && pnpm run test:run && pnpm run test:dist"
   },
   "keywords": [
     "i18n",
@@ -65,10 +68,10 @@
     "not dead"
   ],
   "private": false,
-  "dependencies": {},
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@vitest/coverage-v8": "^2.1.0",
     "typescript": "^5.0.0",
-    "vitest": "^2.1.0",
-    "@vitest/coverage-v8": "^2.1.0"
+    "vitest": "^2.1.0"
   }
 }

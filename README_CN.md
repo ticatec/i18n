@@ -9,10 +9,10 @@
 
 ## 特性
 
-- 🌐 **多语言支持** - 无缝切换不同语言
+- 🌐 **多语言支持** - 语言选择持久化与对应资源自动加载
 - 📦 **动态资源加载** - 从 JSON 文件加载翻译资源，自动添加语言后缀
 - 🔗 **基于 Proxy 的访问** - 使用现代 JavaScript Proxy 实现类型安全的嵌套键访问
-- 💾 **持久化语言设置** - 在 localStorage 中自动持久化语言设置
+- 💾 **持久化语言设置** - 在 localStorage 中自动持久化语言设置，应用刷新时自动生效
 - 🔄 **智能深度合并** - 具有可配置覆盖行为的智能合并
 - 🎯 **完整 TypeScript 支持** - 完整的类型定义和智能提示支持
 - 🏗️ **灵活的资源管理** - 为不同模块创建隔离的资源代理
@@ -23,7 +23,8 @@
 ## 安装
 
 ```bash
-npm i @ticatec/i18n
+pnpm add @ticatec/i18n
+# 或：npm i @ticatec/i18n
 ```
 
 ## 快速开始
@@ -57,18 +58,30 @@ await i18nUtils.loadResources([
 ### 3. 设置语言
 
 ```typescript
-// 设置当前语言
-i18n.language = 'en';
+// 设置当前语言（如果已调用 initialize()，会自动持久化到 localStorage）
+i18n.language = 'zh';
 
 // 库会自动为资源文件添加语言后缀
-// 例如：messages.json 变成 messages_en.json
+// 例如：messages.json 变成 messages_zh.json
 ```
 
 ### 4. 创建资源代理
 
 ```typescript
-// 定义默认资源
-const defaultResources = {
+// 定义默认资源接口（建议不继承 I18nResource 以保持严格类型提示）
+interface MyResources {
+  buttons: {
+    save: string;
+    cancel: string;
+    delete: string;
+  };
+  messages: {
+    success: string;
+    error: string;
+  };
+}
+
+const defaultResources: MyResources = {
   buttons: {
     save: "保存",
     cancel: "取消",
@@ -81,11 +94,12 @@ const defaultResources = {
 };
 
 // 创建具有自动回退功能的资源代理
-const texts = i18nUtils.createResourceProxy(defaultResources, 'myApp');
+const texts = i18nUtils.createResourceProxy<MyResources>(defaultResources, 'myApp');
 
-// 使用类型安全的代理访问
-console.log(texts.buttons.save);     // "Save"（如果加载了英文）或 "保存"（默认值）
-console.log(texts.messages.success); // "Success"（如果加载了英文）或 "操作成功"（默认值）
+// 使用类型安全的代理访问与参数插值
+console.log(texts.buttons.save());      // "Save"（作为函数调用）
+console.log(String(texts.buttons.save)); // "Save"（显式转换为字符串）
+console.log(texts.messages.success({ user: '张三' })); // 参数插值
 ```
 
 ### 5. 获取翻译
@@ -190,26 +204,33 @@ const formatted = i18nUtils.formatText("你好 {{user.name}}，你有 {{count}} 
 - `setResource(langRes: Partial<I18nResource>, options?: I18nOptions): void`
 - `setResource(langRes: Partial<I18nResource>, override?: boolean): void`
   - 手动添加翻译资源
-  - `override`：如果为 `true`（默认），覆盖现有键；如果为 `false`，仅添加缺失的键
+  - `options.override`：如果为 `true`（默认），覆盖现有键；如果为 `false`，仅添加缺失的键
+
+- `clear(): void`
+  - 清空所有已加载的翻译资源
+
+- `reset(): void`
+  - 完全重置所有翻译资源、当前语言设置和存储 Key
 
 ### i18nUtils
 
 #### 方法
 
 - `initialize(key?: string): void`
-  - 从 localStorage 初始化语言
+  - 从 localStorage 初始化语言，并自动监听未来语言变动写入 localStorage
   - 默认 localStorage 键为 'language'
 
-- `loadResources(res: string | string[]): Promise<void>`
-  - 从 JSON 文件加载翻译资源
+- `loadResources(res: string | string[], options?: LoadResourcesOptions): Promise<LoadResourcesResult>`
+  - 从 JSON 文件加载翻译资源（支持并行加载）
   - 自动为文件名添加语言后缀
+  - 返回 `{ loaded: number, failed: number, failedUrls: string[] }`
 
-- `createResourceProxy<T>(defaultResource: Partial<T>, namespace: string, basePath?: string): I18nProxy`
-  - **类型安全**：创建基于 Proxy 的资源访问器
+- `createResourceProxy<T>(defaultResource: Partial<T>, namespace: string, basePath?: string): ResourceProxy<T>`
+  - **类型安全**：根据类型 `T` 创建基于 Proxy 的资源访问器
   - `defaultResource`：默认翻译对象（用于回退）
   - `namespace`：资源的唯一命名空间
   - `basePath`：可选的嵌套访问基础路径
-  - 返回具有链式属性访问的 Proxy 对象
+  - 返回支持函数调用 `()` 及 `.toString()` 转换的 Proxy 对象
 
 - `formatText(template: string, params?: TemplateParams): string`
   - 使用参数插值格式化文本
@@ -233,7 +254,7 @@ const texts = i18nUtils.createResourceProxy(defaultResources, 'myApp');
 await i18nUtils.loadResources('./locales/myApp.json');
 
 // 代理自动使用已加载的翻译，并回退到默认值
-console.log(texts.buttons.save); // 使用已加载的翻译或回退到默认值
+console.log(texts.buttons.save()); // 使用已加载的翻译或回退到默认值
 ```
 
 ### 模块特定的资源管理
@@ -256,8 +277,8 @@ const orderDefaults = {
 const orderTexts = i18nUtils.createResourceProxy(orderDefaults, 'orderModule');
 
 // 每个代理独立操作
-console.log(userTexts.profile.title);  // 用户模块文本
-console.log(orderTexts.list.title);    // 订单模块文本
+console.log(userTexts.profile.title());  // 用户模块文本
+console.log(orderTexts.list.title());    // 订单模块文本
 ```
 
 ### 带参数的文本格式化
@@ -299,7 +320,7 @@ console.log(welcomeText); // "欢迎 张三！" 或翻译版本
 
 ```typescript
 // 资源代理为缺失的键显示清晰的错误消息
-console.log(texts.nonExistent.key);
+console.log(String(texts.nonExistent.key));
 // 输出："missing key: [myApp.nonExistent.key]"
 
 // 带回退的传统方法
@@ -331,16 +352,16 @@ const LoginComponent: React.FC = () => {
 
   return (
     <div>
-      <h1>{componentTexts.title}</h1>
+      <h1>{componentTexts.title()}</h1>
       <form>
-        <label>{componentTexts.username}</label>
+        <label>{componentTexts.username()}</label>
         <input type="text" />
 
-        <label>{componentTexts.password}</label>
+        <label>{componentTexts.password()}</label>
         <input type="password" />
 
-        <button type="submit">{componentTexts.submit}</button>
-        <a href="/forgot">{componentTexts.forgotPassword}</a>
+        <button type="submit">{componentTexts.submit()}</button>
+        <a href="/forgot">{componentTexts.forgotPassword()}</a>
       </form>
     </div>
   );
@@ -361,8 +382,8 @@ const LoginComponent: React.FC = () => {
 </script>
 
 <main>
-  <h1>{texts.welcome}</h1>
-  <p>{texts.description}</p>
+  <h1>{texts.welcome()}</h1>
+  <p>{texts.description()}</p>
 </main>
 ```
 
@@ -438,14 +459,14 @@ class App {
   }
 
   render() {
-    document.title = this.texts.app.title;
+    document.title = this.texts.app.title();
 
     const nav = document.getElementById('navigation');
     if (nav) {
       nav.innerHTML = `
-        <a href="/">${this.texts.navigation.home}</a>
-        <a href="/about">${this.texts.navigation.about}</a>
-        <a href="/contact">${this.texts.navigation.contact}</a>
+        <a href="/">${this.texts.navigation.home()}</a>
+        <a href="/about">${this.texts.navigation.about()}</a>
+        <a href="/contact">${this.texts.navigation.contact()}</a>
       `;
     }
   }

@@ -1,10 +1,9 @@
-import i18n from '../i18nContext';
+import i18n from '../i18nContext.js';
 
 describe('I18nContext', () => {
   beforeEach(() => {
-    // Reset resources before each test
-    i18n.setResource({}, true);
-    i18n.language = '';
+    // Reset context before each test
+    i18n.reset();
   });
 
   describe('language property', () => {
@@ -20,6 +19,28 @@ describe('I18nContext', () => {
 
     it('should default to empty string', () => {
       expect(i18n.language).toBe('');
+    });
+  });
+
+  describe('clear and reset', () => {
+    it('should clear all loaded resources', () => {
+      i18n.setResource({ hello: 'world' });
+      expect(i18n.get('hello')).toBe('world');
+
+      i18n.clear();
+      expect(i18n.get('hello')).toBeUndefined();
+    });
+
+    it('should completely reset all resources, language settings, and storage key', () => {
+      i18n.language = 'en';
+      i18n.setStorageKey('lang_key');
+      i18n.setResource({ hello: 'world' });
+
+      i18n.reset();
+
+      expect(i18n.language).toBe('');
+      expect(i18n.getStorageKey()).toBeUndefined();
+      expect(i18n.get('hello')).toBeUndefined();
     });
   });
 
@@ -74,13 +95,13 @@ describe('I18nContext', () => {
     });
 
     it('should handle arrays', () => {
-      i18n.setResource({ items: [1, 2] });
+      i18n.setResource({ items: [1, 2] } as any);
       expect(i18n.get('items')).toEqual([1, 2]);
     });
 
     it('should merge arrays', () => {
-      i18n.setResource({ items: [1, 2] });
-      i18n.setResource({ items: [3, 4] });
+      i18n.setResource({ items: [1, 2] } as any);
+      i18n.setResource({ items: [3, 4] } as any);
       expect(i18n.get('items')).toEqual([3, 4]);
     });
   });
@@ -139,7 +160,7 @@ describe('I18nContext', () => {
         number: 123,
         bool: true,
         obj: { nested: 'value' },
-        arr: [1, 2, 3],
+        arr: [1, 2, 3] as any,
         null: null
       });
     });
